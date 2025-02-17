@@ -79,7 +79,7 @@ dependencies {
     compileOnly("io.th0rgal:oraxen:1.165.0") { isTransitive = false }
     compileOnly("net.skinsrestorer:skinsrestorer-api:15.0.0") { isTransitive = false }
     compileOnly("com.github.LoneDev6:api-itemsadder:3.6.3-beta-14") { isTransitive = false }
-    compileOnly("org.geysermc.floodgate:api:2.2.3-SNAPSHOT") { isTransitive = false }
+    compileOnly("org.geysermc.floodgate:api:2.2.4-SNAPSHOT") { isTransitive = false }
     compileOnly("de.tr7zw:item-nbt-api-plugin:2.12.2") { isTransitive = false }
     compileOnly("com.github.FrancoBM12:API-MagicCosmetics:2.2.7") { isTransitive = false }
     compileOnly("io.lumine:MythicLib-dist:1.6.2-SNAPSHOT") { isTransitive = false } // Required by MMOItems API
