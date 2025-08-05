@@ -1,6 +1,8 @@
 Options:
   # High, Normal, Low
   Running-Performance: Normal
+  # Optional the file listener (auto reload menu config)
+  File-Listener: true
   Multi-Thread: true
   Async-Load-Menus: true
   # 是否启用并发加载菜单

@@ -89,7 +89,9 @@ object Loader {
                     return@start result
                 }
                 if (result.succeed() && TrMenu.SETTINGS.getBoolean("Loader.Listen-Files", true)) {
-                    listen(it)
+                    if (TrMenu.SETTINGS.getBoolean("Options.File-Listener")) {
+                        listen(it)
+                    }
                 } else errors.addAll(result.errors)
                 result
             },

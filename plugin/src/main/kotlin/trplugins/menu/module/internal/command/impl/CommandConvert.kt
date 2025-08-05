@@ -4,6 +4,7 @@ import org.bukkit.command.CommandSender
 import taboolib.common.platform.command.subCommand
 import taboolib.module.configuration.Type
 import taboolib.platform.util.sendLang
+import trplugins.menu.TrMenu
 import trplugins.menu.api.suffixes
 import trplugins.menu.module.conf.Loader
 import trplugins.menu.module.display.Menu
@@ -56,8 +57,10 @@ object CommandConvert : CommandExpression {
                         File(file.parentFile, "${file.nameWithoutExtension}.${type.suffixes[0]}").let {
                             menu.conf.file = it
                             menu.conf.saveToFile()
-                            // 开始监听新文件
-                            Loader.listen(it)
+                            if (TrMenu.SETTINGS.getBoolean("Options.File-Listener")) {
+                                // 开始监听新文件
+                                Loader.listen(it)
+                            }
                         }
                     }
                     sender.sendLang("Command-Convert-Converted", menu.id, type.name)
