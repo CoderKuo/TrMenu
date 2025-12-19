@@ -5,6 +5,7 @@ import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 import org.bukkit.metadata.FixedMetadataValue
 import taboolib.common.LifeCycle
+import taboolib.common.env.RuntimeDependency
 import taboolib.common.platform.Awake
 import taboolib.common.platform.ProxyPlayer
 import taboolib.common.platform.Schedule
@@ -34,6 +35,12 @@ import java.util.concurrent.ConcurrentHashMap
  * <meta> -> only lost when the server is shut down
  * <data> -> storable, (support MongoDB)
  */
+@RuntimeDependency(
+    value = "!org.slf4j:slf4j-jdk14:2.0.8",
+    test = "!org.slf4j_2_0_8.jul.JULServiceProvider",
+    relocate = ["!org.slf4j", "!org.slf4j_2_0_8"],
+    transitive = false
+)
 object Metadata {
 
     internal val meta = mutableMapOf<String, DataMap>()
