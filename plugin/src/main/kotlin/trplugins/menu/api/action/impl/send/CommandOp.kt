@@ -4,6 +4,7 @@ import org.bukkit.entity.Player
 import taboolib.common.platform.ProxyPlayer
 import taboolib.common.platform.function.submit
 import taboolib.expansion.dispatchCommandAsOp
+import taboolib.platform.util.runTask
 import trplugins.menu.api.action.ActionHandle
 import trplugins.menu.api.action.base.ActionBase
 import trplugins.menu.api.action.base.ActionContents
@@ -22,15 +23,16 @@ class CommandOp(handle: ActionHandle) : ActionBase(handle) {
 
     override fun onExecute(contents: ActionContents, player: ProxyPlayer, placeholderPlayer: ProxyPlayer) {
         val fakeOp = player.session().menu?.settings?.commandFakeOp ?: true
+        val bukkitPlayer = player.cast<Player>()
         contents.stringContent().parseContentSplited(placeholderPlayer, ";").forEach {
-            submit(async = false) {
+            bukkitPlayer.location.runTask(   {
                 if (fakeOp) {
-                    player.cast<Player>().dispatchCommandAsOp(it)
+                    bukkitPlayer.dispatchCommandAsOp(it)
                 } else {
                     player.isOp.let { isOp ->
                         player.isOp = true
                         try {
-                            player.performCommand(it)
+                            bukkitPlayer.performCommand(it)
                         } catch (e: Throwable) {
                             e.printStackTrace()
                         } finally {
@@ -38,7 +40,7 @@ class CommandOp(handle: ActionHandle) : ActionBase(handle) {
                         }
                     }
                 }
-            }
+            })
         }
     }
 
