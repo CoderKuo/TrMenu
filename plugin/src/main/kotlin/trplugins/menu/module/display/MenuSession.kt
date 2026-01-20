@@ -6,7 +6,6 @@ import taboolib.common.platform.function.submitAsync
 import taboolib.common.platform.service.PlatformExecutor
 import taboolib.common.util.replaceWithOrder
 import taboolib.library.reflex.Reflex.Companion.getProperty
-import taboolib.module.chat.colored
 import taboolib.module.lang.Language
 import taboolib.platform.compat.replacePlaceholder
 import trplugins.menu.api.event.MenuCloseEvent
@@ -15,8 +14,7 @@ import trplugins.menu.module.display.icon.Icon
 import trplugins.menu.module.display.icon.IconProperty
 import trplugins.menu.module.display.layout.Layout
 import trplugins.menu.module.internal.script.FunctionParser
-import trplugins.menu.util.parseGradients
-import trplugins.menu.util.parseRainbow
+import trplugins.menu.util.colorify
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
@@ -144,10 +142,10 @@ class MenuSession(
             }
         }
         val content =
-            (if (preColor) funced else funced.colored().parseRainbow().parseGradients()).replaceWithOrder(*arguments).replaceWithOrder(*implicitArguments)
+            (if (preColor) funced else funced.colorify()).replaceWithOrder(*arguments).replaceWithOrder(*implicitArguments)
         val papi = content.replacePlaceholder(placeholderPlayer)
 
-        return if (preColor) papi else papi.colored().parseRainbow().parseGradients()
+        return if (preColor) papi else papi.colorify()
     }
 
     fun parse(string: List<String>): List<String> {

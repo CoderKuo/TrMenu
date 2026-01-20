@@ -20,6 +20,8 @@ object Hex {
         Pattern.compile("<(?<type>rainbow|r)(#(?<speed>\\d+))?(:(?<saturation>\\d*\\.?\\d+))?(:(?<brightness>\\d*\\.?\\d+))?(:(?<loop>l|L|loop))?>")
     private val GRADIENT_PATTERN =
         Pattern.compile("<(?<type>gradient|g)(#(?<speed>\\d+))?(?<hex>(:#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})){2,})(:(?<loop>l|L|loop))?>")
+    private val LEGACY_HEX_PATTERN =
+        Pattern.compile("&\\{#([A-Fa-f0-9]){6}}") // &{#FFFFFF}
     private val HEX_PATTERNS = listOf(
         Pattern.compile("<#([A-Fa-f0-9]){6}>"),  // <#FFFFFF>
         Pattern.compile("\\{#([A-Fa-f0-9]){6}}"),  // {#FFFFFF}
@@ -70,8 +72,9 @@ object Hex {
      * @param message The message
      * @return A color-replaced message
      */
-    private fun colorify(message: String): String {
+    internal fun colorify(message: String): String {
         var parsed = message
+        parsed = normalizeLegacyHex(parsed)
         parsed = parseRainbow(parsed)
         parsed = parseGradients(parsed)
         parsed = parseHex(parsed)
@@ -220,6 +223,11 @@ object Hex {
 
     private fun parseLegacy(message: String): String {
         return ChatColor.translateAlternateColorCodes('&', message)
+    }
+
+    private fun normalizeLegacyHex(message: String): String {
+        val matcher = LEGACY_HEX_PATTERN.matcher(message)
+        return if (matcher.find()) matcher.replaceAll("&#\$1") else message
     }
 
     /**
@@ -422,5 +430,6 @@ object Hex {
     }
 }
 
+fun String.colorify() = Hex.colorify(this)
 fun String.parseRainbow() = Hex.parseRainbow(this)
 fun String.parseGradients() = Hex.parseGradients(this)
