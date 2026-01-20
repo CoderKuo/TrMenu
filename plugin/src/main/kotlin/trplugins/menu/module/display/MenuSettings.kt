@@ -3,12 +3,12 @@ package trplugins.menu.module.display
 import me.clip.placeholderapi.PlaceholderAPI
 import org.bukkit.Bukkit
 import taboolib.common.platform.function.pluginId
-import taboolib.module.chat.colored
 import trplugins.menu.TrMenu
 import trplugins.menu.api.reaction.Reactions
 import trplugins.menu.api.receptacle.MenuTaskData
 import trplugins.menu.module.internal.script.js.ScriptFunction
 import trplugins.menu.util.Cooldown
+import trplugins.menu.util.colorify
 import trplugins.menu.util.bukkit.ItemMatcher
 import trplugins.menu.util.collections.CycleList
 
@@ -40,8 +40,8 @@ class MenuSettings(
     companion object {
 
         val PRE_COLOR get() = TrMenu.SETTINGS.getBoolean("Menu.Icon.Item.Pre-Color")
-        val DEFAULT_NAME_COLOR get() = (TrMenu.SETTINGS.getString("Menu.Icon.Item.Default-Name-Color") ?: "&7").colored()
-        val DEFAULT_LORE_COLOR get() = (TrMenu.SETTINGS.getString("Menu.Icon.Item.Default-Lore-Color") ?: "&7").colored()
+        val DEFAULT_NAME_COLOR get() = (TrMenu.SETTINGS.getString("Menu.Icon.Item.Default-Name-Color") ?: "&7").colorify()
+        val DEFAULT_LORE_COLOR get() = (TrMenu.SETTINGS.getString("Menu.Icon.Item.Default-Lore-Color") ?: "&7").colorify()
 
     }
 
