@@ -26,15 +26,12 @@ object RegisterCommands {
     }
 
     fun load() {
-        submit {
-            registered.removeIf {
-                unregisterCommand(it)
-                true
-            }
+        val unregisterList = registered.toList()
+        unregisterList.forEach { unregisterCommand(it) }
+        registered.clear()
 
-        }
-
-        TrMenu.SETTINGS.getConfigurationSection("RegisterCommands")?.let { it ->
+        val section = TrMenu.SETTINGS.getConfigurationSection("RegisterCommands")
+        section?.let { it ->
             for (main in it.getKeys(false)) {
                 val section = it.getConfigurationSection(main) ?: continue
                 val argument = section.getConfigurationSection("arguments")
@@ -81,9 +78,11 @@ object RegisterCommands {
         // 延迟同步命令到所有在线玩家，避免与 Paper 异步命令发送线程冲突
         // Paper 的 sendAsync 会在异步线程遍历命令树，直接调用 updateCommands 可能触发 ConcurrentModificationException
         submit(delay = 1) {
-            try {
-                Bukkit.getOnlinePlayers().forEach { it.updateCommands() }
-            } catch (_: Throwable) {}
+            val players = Bukkit.getOnlinePlayers()
+            if (players.isEmpty()) {
+                return@submit
+            }
+            players.forEach { it.updateCommands() }
         }
     }
 }
