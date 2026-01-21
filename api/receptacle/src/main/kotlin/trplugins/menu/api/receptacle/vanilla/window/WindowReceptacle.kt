@@ -4,9 +4,11 @@ import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import taboolib.common.platform.function.submit
 import taboolib.module.chat.component
+import taboolib.module.nms.MinecraftVersion
 import taboolib.module.nms.nmsProxy
 import trplugins.menu.api.receptacle.Receptacle
 import trplugins.menu.api.receptacle.ReceptacleInteractEvent
+import trplugins.menu.api.receptacle.getViewingReceptacle
 import trplugins.menu.api.receptacle.setViewingReceptacle
 
 /**
@@ -47,8 +49,9 @@ open class WindowReceptacle(var type: WindowLayout, override var title: String =
 
     override fun setElement(element: ItemStack?, slot: Int, display: Boolean) {
         contents[slot] = element
-        if (!display || viewer == null) return
-        nmsProxy<NMS>().sendWindowsSetSlot(viewer!!, slot = slot, itemStack = element, stateId = stateId)
+        val player = viewer ?: return
+        if (!display || player.getViewingReceptacle() != this) return
+        nmsProxy<NMS>().sendWindowsSetSlot(player, slot = slot, itemStack = element, stateId = stateId)
     }
 
     override fun clear(display: Boolean) {
@@ -59,22 +62,22 @@ open class WindowReceptacle(var type: WindowLayout, override var title: String =
     }
 
     override fun refresh(slot: Int) {
-        if (viewer != null) {
-            setupPlayerInventorySlots()
-            runCatching {
-                if (slot >= 0) {
-                    nmsProxy<NMS>().sendWindowsSetSlot(viewer!!, slot = slot, itemStack = contents[slot], stateId = stateId)
-                } else {
-                    nmsProxy<NMS>().sendWindowsItems(viewer!!, items = contents)
-                }
+        val player = viewer ?: return
+        if (player.getViewingReceptacle() != this) return
+        setupPlayerInventorySlots()
+        runCatching {
+            if (slot >= 0) {
+                nmsProxy<NMS>().sendWindowsSetSlot(player, slot = slot, itemStack = contents[slot], stateId = stateId)
+            } else {
+                nmsProxy<NMS>().sendWindowsItems(player, items = contents)
             }
         }
     }
 
     override fun open(player: Player) {
         viewer = player
-        initializationPackets()
         player.setViewingReceptacle(this)
+        initializationPackets()
         onOpen(player, this)
     }
 
@@ -85,6 +88,7 @@ open class WindowReceptacle(var type: WindowLayout, override var title: String =
             }
             onClose(viewer!!, this)
             viewer!!.setViewingReceptacle(null)
+            viewer = null
         }
     }
 
@@ -98,9 +102,9 @@ open class WindowReceptacle(var type: WindowLayout, override var title: String =
     }
 
     override fun property(id: Int, value: Int) {
-        if (viewer != null) {
-            nmsProxy<NMS>().sendWindowsUpdateData(viewer!!, id = id, value = value)
-        }
+        val player = viewer ?: return
+        if (player.getViewingReceptacle() != this) return
+        nmsProxy<NMS>().sendWindowsUpdateData(player, id = id, value = value)
     }
 
     override fun callEventClick(event: ReceptacleInteractEvent<ItemStack>) {
@@ -112,7 +116,10 @@ open class WindowReceptacle(var type: WindowLayout, override var title: String =
     private fun initializationPackets() {
         if (viewer != null) {
             nmsProxy<NMS>().sendWindowsOpen(viewer!!, title = title, type = type)
-            nmsProxy<NMS>().sendWindowsSetSlot(viewer!!, windowId = 0, slot = 45)
+            if (MinecraftVersion.majorLegacy < 12111) {
+                // 1.21.11+ can crash on offhand slot update during menu switch
+                nmsProxy<NMS>().sendWindowsSetSlot(viewer!!, windowId = 0, slot = 45)
+            }
             refresh()
         }
     }

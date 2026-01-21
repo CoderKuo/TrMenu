@@ -106,7 +106,11 @@ object WindowListener {
         receptacle.callEventClick(evt)
         if (evt.isCancelled) {
             if (clickType == ReceptacleClickType.OFFHAND) {
-                nmsProxy<NMS>().sendWindowsSetSlot(player, windowId = 0, slot = 45)
+                if (MinecraftVersion.majorLegacy < 12111) {
+                    nmsProxy<NMS>().sendWindowsSetSlot(player, windowId = 0, slot = 45)
+                } else {
+                    nmsProxy<NMS>().sendWindowsSetSlot(player, slot = -1, windowId = -1)
+                }
             } else {
                 nmsProxy<NMS>().sendWindowsSetSlot(player, slot = -1, windowId = -1)
             }

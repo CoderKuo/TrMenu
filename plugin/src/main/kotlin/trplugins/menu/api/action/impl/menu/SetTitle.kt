@@ -6,6 +6,8 @@ import trplugins.menu.api.action.ActionHandle
 import trplugins.menu.api.action.base.ActionBase
 import trplugins.menu.api.action.base.ActionContents
 import trplugins.menu.module.display.session
+import trplugins.menu.util.colorify
+import trplugins.menu.util.parseJson
 
 /**
  * TrMenu
@@ -25,6 +27,11 @@ class SetTitle(handle: ActionHandle) : ActionBase(handle) {
         val session = player.session()
         val receptacle = session.receptacle ?: return
         var title = contents.stringContent().parseContent(placeholderPlayer)
+        title = if (useComponent && runCatching { title.parseJson() }.isSuccess) {
+            title
+        } else {
+            title.colorify()
+        }
         if (useComponent) {
             title = title.component().build().toRawMessage()
         }

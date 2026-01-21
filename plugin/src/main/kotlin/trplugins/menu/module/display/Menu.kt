@@ -21,6 +21,8 @@ import trplugins.menu.module.display.layout.MenuLayout
 import trplugins.menu.module.internal.data.Metadata
 import trplugins.menu.module.internal.script.evalAction
 import trplugins.menu.module.internal.script.evalScript
+import trplugins.menu.util.colorify
+import trplugins.menu.util.parseJson
 import java.util.function.Consumer
 
 /**
@@ -168,9 +170,7 @@ class Menu(
                     loadTitle(session)
                 }
             } else {
-                val parseTitle = if (SetTitle.useComponent) {
-                    title.component().build().toRawMessage()
-                } else title
+                val parseTitle = formatTitle(title)
                 session.receptacle?.title(parseTitle, update = false)
             }
             if (BEDROCK_DELAY > 0 && PlatformProvider.isBedrockPlayer(viewer)) {
@@ -189,18 +189,12 @@ class Menu(
     private fun loadTitle(session: MenuSession) {
         val title = settings.title(session)
         session.receptacle?.title(title.next(session.id)?.let {
-            val parseTitle = session.parse(it)
-            if (SetTitle.useComponent) {
-                parseTitle.component().build().toRawMessage()
-            } else parseTitle
+            formatTitle(session.parse(it))
         } ?: pluginId, update = false)
 
         val setTitle = {
             session.receptacle?.title(title.next(session.id)?.let {
-                val parseTitle = session.parse(it)
-                if (SetTitle.useComponent) {
-                    parseTitle.component().build().toRawMessage()
-                } else parseTitle
+                formatTitle(session.parse(it))
             } ?: pluginId)
         }
 
@@ -209,6 +203,15 @@ class Menu(
                 setTitle()
             })
         }
+    }
+
+    private fun formatTitle(title: String): String {
+        val colored = if (SetTitle.useComponent && runCatching { title.parseJson() }.isSuccess) {
+            title
+        } else {
+            title.colorify()
+        }
+        return if (SetTitle.useComponent) colored.component().build().toRawMessage() else colored
     }
 
     private fun loadIcon(session: MenuSession) {
