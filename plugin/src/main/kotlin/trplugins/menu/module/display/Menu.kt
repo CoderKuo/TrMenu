@@ -92,6 +92,7 @@ class Menu(
 
         if (menuOpenEvent.isCancelled) return
         session.menu = this
+        session.cacheNodes()
         block(session)
 
         if (!Metadata.byBukkit(viewer, "FORCE_OPEN") && !settings.openEvent.eval(adaptPlayer(session.viewer))) {

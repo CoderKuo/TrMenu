@@ -1,3 +1,5 @@
 .gradle
 .idea
 build
+.serena
+AGENTS.md

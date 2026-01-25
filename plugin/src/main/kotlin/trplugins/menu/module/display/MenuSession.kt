@@ -83,6 +83,9 @@ class MenuSession(
     // 临时任务（切换页码时允许删除）
     private val temporaries = mutableSetOf<PlatformExecutor.PlatformTask>()
 
+    // 缓存菜单节点，避免菜单关闭后无法读取
+    private var nodeCache: Map<String, Any?> = emptyMap()
+
     var locale: String = kotlin.run {
         if (langPlayer.isNotBlank()) {
             // Avoid ConcurrentModificationException
@@ -131,9 +134,7 @@ class MenuSession(
         val funced = FunctionParser.parse(placeholderPlayer, string) { type, value ->
             when (type) {
                 "node", "nodes", "n" -> parseNode(value) { key ->
-                    val config = menu?.conf ?: return@parseNode null
-                    val foundKey = config.getKeys(true).find { it.equals(key, ignoreCase = true) } ?: return@parseNode null
-                    config[foundKey]
+                    getNodeValue(key)
                 }
                 "lang" -> parseNode(value) { key ->
                     menu?.getLocaleValue(locale, key)
@@ -150,6 +151,21 @@ class MenuSession(
 
     fun parse(string: List<String>): List<String> {
         return string.map { parse(it) }
+    }
+
+    fun cacheNodes() {
+        val config = menu?.conf
+        nodeCache = config?.getKeys(true)?.associateBy({ it.lowercase() }) { config[it] } ?: emptyMap()
+    }
+
+    fun getNodeValue(key: String): Any? {
+        val normalizedKey = key.lowercase()
+        if (nodeCache.containsKey(normalizedKey)) {
+            return nodeCache[normalizedKey]
+        }
+        val config = menu?.conf ?: return null
+        val foundKey = config.getKeys(true).find { it.equals(key, ignoreCase = true) } ?: return null
+        return config[foundKey]
     }
 
     private fun parseNode(node: String, valueSupplier: (String) -> Any?): String? {

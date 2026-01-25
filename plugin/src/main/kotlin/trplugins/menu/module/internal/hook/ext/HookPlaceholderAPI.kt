@@ -39,7 +39,7 @@ object HookPlaceholderAPI : PlaceholderExpansion {
             "meta" -> Metadata.getMeta(player)[key]
             "data" -> Metadata.getData(player)[key]
             "globaldata" -> runCatching { Metadata.globalData[value()].toString() }.getOrElse { "null" }
-            "node" -> session.menu?.conf?.let { it[it.ignoreCase(value())].toString() }.toString()
+            "node" -> session.getNodeValue(value())?.toString() ?: "null"
             "menu" -> menu(session, params)
             "locale" -> session.locale
             "js" -> if (enabledParseJavaScript) if (params.size > 1) JavaScriptAgent.eval(session, params[1]).asString() else "" else "UNABLE_PARSE"
