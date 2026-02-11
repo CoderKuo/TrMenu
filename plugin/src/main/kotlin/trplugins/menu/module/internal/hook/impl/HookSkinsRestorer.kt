@@ -2,7 +2,9 @@ package trplugins.menu.module.internal.hook.impl
 
 import net.skinsrestorer.api.SkinsRestorer
 import net.skinsrestorer.api.SkinsRestorerProvider
+import taboolib.common.platform.function.submit
 import trplugins.menu.module.internal.hook.HookAbstract
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * @author Arasple
@@ -22,11 +24,28 @@ class HookSkinsRestorer : HookAbstract() {
         return@lazy skinsRestorer != null
     }
 
+    private val textureCache = ConcurrentHashMap<String, String>()
+    private val loading = ConcurrentHashMap.newKeySet<String>()
+
     fun getPlayerSkinTexture(name: String): String? {
+        val key = name.lowercase()
+        textureCache[key]?.let {
+            return it
+        }
+
         skinsRestorer?.let {
-            val skinData = it.skinStorage.findOrCreateSkinData(name)
-            if (skinData.isPresent) {
-                return skinData.get().property.value
+            if (loading.add(key)) {
+                submit(async = true) {
+                    try {
+                        val skinData = it.skinStorage.findOrCreateSkinData(name)
+                        if (skinData.isPresent) {
+                            textureCache[key] = skinData.get().property.value
+                        }
+                    } catch (_: Throwable) {
+                    } finally {
+                        loading.remove(key)
+                    }
+                }
             }
         }
         return null

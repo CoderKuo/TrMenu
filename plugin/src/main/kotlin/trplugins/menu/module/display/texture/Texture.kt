@@ -139,7 +139,9 @@ class Texture(
             if (type == TextureType.NORMAL) {
                 if (Regexs.JSON_TEXTURE.find(texture) != null) {
                     type = TextureType.RAW
-                    if (!dynamic) static = ItemHelper.fromJson(texture)!!
+                    if (!dynamic) static = ItemHelper.fromJson(texture) ?: buildItem(XMaterial.matchXMaterial(FALL_BACK)) {
+                        name = texture
+                    }
                 }
             }
             return Texture(raw, type, texture, dynamic, static, meta)
