@@ -80,7 +80,7 @@ abstract class ActionBase(val handle: ActionHandle) {
             }
         }
 
-        return content.removePrefix(" ") to Option(options)
+        return content.trim() to Option(options)
     }
 
     fun register() {
