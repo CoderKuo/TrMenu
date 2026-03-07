@@ -31,6 +31,7 @@ taboolib {
             name("NBTAPI").with("bukkit").optional(true).loadafter(true)
             name("TrMenu-Graal").with("bukkit").optional(true)
             name("AzureFlow").with("bukkit").optional(true)
+            name("MeowEco").with("bukkit").optional(true)
             name("CraftEngine").with("bukkit").optional(true)
             name("SX-Item").with("bukkit").optional(true)
         }
@@ -98,5 +99,6 @@ dependencies {
     compileOnly("com.willfp:EcoItems:5.49.1") { isTransitive = false }
     compileOnly("net.momirealms:craft-engine-core:0.0.22") { isTransitive = false }
     compileOnly("net.momirealms:craft-engine-bukkit:0.0.22") { isTransitive = false }
+    compileOnly(files("libs/MeowEco-26.7.0.jar"))
     compileOnly(fileTree("libs"))
 }
