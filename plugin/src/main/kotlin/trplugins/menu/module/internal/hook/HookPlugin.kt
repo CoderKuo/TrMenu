@@ -98,6 +98,10 @@ object HookPlugin {
         return get(HookNeigeItems::class.java)
     }
 
+    fun getMeowEco(): HookMeowEco {
+        return get(HookMeowEco::class.java)
+    }
+
     fun getEcoItem(): HookEcoItems {
         return get(HookEcoItems::class.java)
     }
