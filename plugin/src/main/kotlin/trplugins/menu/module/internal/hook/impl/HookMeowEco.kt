@@ -1,6 +1,7 @@
 package trplugins.menu.module.internal.hook.impl
 
 import org.bukkit.OfflinePlayer
+import taboolib.library.reflex.Reflex.Companion.invokeMethod
 import trplugins.menu.module.internal.hook.HookAbstract
 
 /**
@@ -14,9 +15,8 @@ class HookMeowEco : HookAbstract() {
     private fun getApiInstance(): Any? {
         if (!isHooked) return null
         return try {
-            val clazz = Class.forName(apiClassName)
-            clazz.getMethod("get").invoke(null)
-        } catch (e: Exception) {
+            Class.forName(apiClassName).invokeMethod<Any>("get")
+        } catch (e: Throwable) {
             null
         }
     }
@@ -24,9 +24,8 @@ class HookMeowEco : HookAbstract() {
     fun getBalance(player: OfflinePlayer, currencyId: String): Double {
         val api = getApiInstance() ?: return 0.0
         return try {
-            val method = api.javaClass.getMethod("getBalance", OfflinePlayer::class.java, String::class.java)
-            (method.invoke(api, player, currencyId) as Number).toDouble()
-        } catch (e: Exception) {
+            api.invokeMethod<Number>("getBalance", player, currencyId)?.toDouble() ?: 0.0
+        } catch (e: Throwable) {
             0.0
         }
     }
@@ -34,9 +33,8 @@ class HookMeowEco : HookAbstract() {
     fun takeBalance(player: OfflinePlayer, currencyId: String, amount: Double): Boolean {
         val api = getApiInstance() ?: return false
         return try {
-            val method = api.javaClass.getMethod("takeBalance", OfflinePlayer::class.java, String::class.java, Double::class.java)
-            method.invoke(api, player, currencyId, amount) as Boolean
-        } catch (e: Exception) {
+            api.invokeMethod<Boolean>("takeBalance", player, currencyId, amount) ?: false
+        } catch (e: Throwable) {
             false
         }
     }
@@ -44,9 +42,8 @@ class HookMeowEco : HookAbstract() {
     fun giveBalance(player: OfflinePlayer, currencyId: String, amount: Double): Boolean {
         val api = getApiInstance() ?: return false
         return try {
-            val method = api.javaClass.getMethod("giveBalance", OfflinePlayer::class.java, String::class.java, Double::class.java)
-            method.invoke(api, player, currencyId, amount) as Boolean
-        } catch (e: Exception) {
+            api.invokeMethod<Boolean>("giveBalance", player, currencyId, amount) ?: false
+        } catch (e: Throwable) {
             false
         }
     }
