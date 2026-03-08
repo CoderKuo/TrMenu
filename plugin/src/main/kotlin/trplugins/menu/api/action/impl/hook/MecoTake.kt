@@ -15,7 +15,7 @@ class MecoTake(handle: ActionHandle) : ActionBase(handle) {
     override val regex = "meco-take".toRegex()
 
     override fun onExecute(contents: ActionContents, player: ProxyPlayer, placeholderPlayer: ProxyPlayer) {
-        val args = contents.stringContent().parseContent(placeholderPlayer).split(" ")
+        val args = contents.stringContent().parseContent(placeholderPlayer).trim().split(Regex("\\s+"))
         if (args.size >= 2) {
             val currencyId = args[0]
             val amount = args[1].toDoubleOrNull() ?: 0.0
