@@ -11,6 +11,9 @@ Options:
     Bedrock: false
   Packet-Inventory:
     Create-Id: false
+  # 代理类型: BUNGEE / VELOCITY / AUTO
+  # AUTO 模式下同时注册 BungeeCord 和 bungeecord:main 两个 channel
+  Proxy: AUTO
   Bedrock-Open-Delay: 20
 
   Placeholders:
