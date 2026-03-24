@@ -1,4 +1,4 @@
-Title: '&0确认进入竞技场'
+Title: '&0NOTICE 示例 - 奖励计划'
 Render-Type: DIALOG
 
 Options:
@@ -16,53 +16,52 @@ Dialog:
   Min-Version: '1.21.6'
   Fallback-Menu: 'Example'
   Allow-Esc-Close: true
-  External-Title: '&8竞技场确认'
+  External-Title: '&8Dialogs / Notice'
 
   Pages:
-    - Id: 'confirm'
+    - Id: 'notice_signup'
       Type: 'notice'
-      Title: '&0确认进入竞技场'
+      Title: '&0NOTICE 示例 - 奖励计划'
       Body:
         - Id: 'desc'
           Renderer: 'plain_message'
           Width: 320
           Text:
-            - '&7你即将进入 &b天空竞技场&7。'
-            - '&7进入后将立即传送，并清空当前菜单上下文。'
-        - Id: 'mode'
-          Renderer: 'single_option'
-          Width: 320
-          Label: '&7选择模式'
-          Options:
-            - Id: 'solo'
-              Title: '&a单人'
-              Description: '&7独自进入竞技场'
-            - Id: 'team'
-              Title: '&b组队'
-              Description: '&7与队友一同进入'
-        - Id: 'reason'
+            - '&7这是一个 &eNOTICE&7 类型示例。'
+            - '&7它展示了输入框和 &bmulti_option&7 配置。'
+        - Id: 'signup_note'
           Renderer: 'input'
           Width: 320
           Label: '&7附加备注'
-          Placeholder: '&8例如：快速开局'
+          Placeholder: '&8例如：周末活动玩家'
           Max-Length: 32
-        - Id: 'agree'
+        - Id: 'reward_packs'
+          Renderer: 'multi_option'
+          Width: 320
+          Label: '&7选择你要领取的奖励包'
+          Default-Value:
+            - 'starter'
+          Options:
+            - Id: 'starter'
+              Title: '&a新手包'
+              Description: '&7基础补给与起步物资'
+            - Id: 'combat'
+              Title: '&c战斗包'
+              Description: '&7适合竞技与刷怪玩法'
+            - Id: 'builder'
+              Title: '&b建筑包'
+              Description: '&7适合家园建设与装饰'
+        - Id: 'confirm_rules'
           Renderer: 'boolean'
           Width: 320
-          Label: '&7我已阅读进入提示'
-          Initial: false
+          Label: '&7我已阅读奖励发放规则'
+          Initial: true
       Actions:
-        - Id: 'confirm_join'
-          Label: '&a确认进入'
-          Width: 160
+        - Id: 'submit_notice'
+          Label: '&a提交选择'
+          Width: 180
           Close-On-Click: true
           Execute:
-            - 'set-meta: join_mode %trmenu_dialog_option_mode%'
-            - 'set-meta: join_reason %trmenu_dialog_input_reason%'
-            - 'tell: &a已提交进入请求，模式：%trmenu_dialog_option_mode%'
-        - Id: 'cancel_join'
-          Label: '&c取消'
-          Width: 120
-          Close-On-Click: true
-          Execute:
-            - 'close'
+            - 'set-meta: notice_note %trmenu_dialog_input_signup_note%'
+            - 'set-meta: notice_packs %trmenu_dialog_option_reward_packs%'
+            - 'tell: &aNOTICE 示例已提交, 奖励包: %trmenu_dialog_option_reward_packs%'

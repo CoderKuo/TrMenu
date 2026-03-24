@@ -23,6 +23,7 @@ data class DialogWidgetSpec(
     val maxLength: Int? = null,
     val closeOnClick: Boolean = true,
     val nextPage: Int? = null,
+    val exitAction: Boolean = false,
     val actions: List<Any> = emptyList(),
     val condition: String = ""
 )

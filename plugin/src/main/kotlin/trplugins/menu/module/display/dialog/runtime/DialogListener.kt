@@ -5,7 +5,7 @@ import taboolib.common.platform.PlatformSide
 import taboolib.common.platform.event.SubscribeEvent
 import taboolib.module.nms.PacketReceiveEvent
 import taboolib.module.nms.nmsProxy
-import trplugins.menu.api.receptacle.dialog.DialogNms
+import trplugins.menu.api.receptacle.dialog.DialogNMS
 import trplugins.menu.module.display.MenuSession
 import trplugins.menu.module.display.MenuRenderType
 
@@ -18,7 +18,7 @@ object DialogListener {
         if (session.renderType != MenuRenderType.DIALOG) {
             return
         }
-        val response = runCatching { nmsProxy<DialogNms>().parseResponse(e.packet.source) }.getOrNull() ?: return
+        val response = runCatching { nmsProxy<DialogNMS>().parseResponse(e.packet.source) }.getOrNull() ?: return
         e.isCancelled = true
         DialogMenuRenderer.handleResponse(session, response)
     }

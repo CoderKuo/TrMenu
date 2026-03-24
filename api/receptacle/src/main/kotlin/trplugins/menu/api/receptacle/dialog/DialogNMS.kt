@@ -2,7 +2,7 @@ package trplugins.menu.api.receptacle.dialog
 
 import org.bukkit.entity.Player
 
-abstract class DialogNms {
+abstract class DialogNMS {
 
     abstract fun supportsDialogs(): Boolean
 

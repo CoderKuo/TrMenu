@@ -9,5 +9,6 @@ data class DialogPayload(
     val externalTitle: String?,
     val allowEscClose: Boolean,
     val body: List<DialogElementPayload>,
-    val actions: List<DialogActionPayload>
+    val actions: List<DialogActionPayload>,
+    val exitAction: DialogActionPayload? = null
 )

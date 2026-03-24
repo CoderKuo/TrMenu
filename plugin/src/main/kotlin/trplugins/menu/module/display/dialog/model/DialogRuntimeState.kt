@@ -10,7 +10,8 @@ data class DialogRuntimeState(
     val actionMap: Map<String, DialogActionSpec>,
     val inputIds: Set<String>,
     val optionIds: Set<String>,
-    val booleanIds: Set<String>
+    val booleanIds: Set<String>,
+    val multiOptionGroups: Map<String, Map<String, String>> = emptyMap()
 ) {
     val values: MutableMap<String, Any?> = mutableMapOf()
 }

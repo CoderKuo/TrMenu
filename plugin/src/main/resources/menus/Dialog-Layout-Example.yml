@@ -1,11 +1,11 @@
-Title: '&0服务器确认面板'
+Title: '&0MULTI_ACTION 示例 - 服务器分区'
 Render-Type: DIALOG
 
 Dialog:
   Min-Version: '1.21.6'
   Fallback-Menu: 'Example'
   Allow-Esc-Close: true
-  External-Title: '&8自定义 Dialog'
+  External-Title: '&8Dialogs / MultiAction'
   Compiler:
     Strategy: AUTO
     Unsupported-Policy: FALLBACK_MENU
@@ -14,8 +14,15 @@ Dialog:
     Mixin-Assist: false
   Pages:
     - Id: 'server_select'
-      Type: 'notice'
-      Title: '&0服务器确认面板'
+      Type: 'multi_action'
+      Title: '&0MULTI_ACTION 示例 - 服务器分区'
+      Exit-Action:
+        Id: 'exit_dialog'
+        Label: '&c关闭面板'
+        Width: 120
+        Close-On-Click: true
+        Execute:
+          - 'tell: &7你已关闭 MULTI_ACTION 示例面板'
       Layout:
         Row-Gap: 1
         Sections:
@@ -44,8 +51,8 @@ Dialog:
           col-start: 4
           col-span: 9
           text:
-            - '&7请选择你要前往的服务器分区。'
-            - '&7如果选择生存服，将自动记录当前线路。'
+            - '&7这是一个 &bMULTI_ACTION&7 类型示例。'
+            - '&7它演示了布局、Exit-Action 与 multi_option。'
         target:
           kind: single_option
           anchor: content
@@ -63,10 +70,29 @@ Dialog:
             - id: pvp
               title: '&c竞技服'
               description: '&7即时战斗玩法'
+        server_modes:
+          kind: multi_option
+          anchor: content
+          row: 2
+          col-start: 1
+          col-span: 12
+          label: '&7附加模式'
+          default-values:
+            - cross_server
+          options:
+            - id: cross_server
+              title: '&e跨服匹配'
+              description: '&7允许跨服自动匹配队列'
+            - id: double_rewards
+              title: '&6双倍奖励'
+              description: '&7优先进入奖励线路'
+            - id: observer
+              title: '&7观察者'
+              description: '&7以旁观模式进入'
         note:
           kind: input
           anchor: content
-          row: 2
+          row: 3
           col-start: 1
           col-span: 12
           label: '&7备注'
@@ -75,28 +101,30 @@ Dialog:
         agree:
           kind: boolean
           anchor: content
-          row: 3
+          row: 4
           col-start: 1
           col-span: 12
           label: '&7我已阅读传送说明'
           initial: false
-        confirm:
+        connect:
           kind: action
           anchor: footer
           row: 1
           col-start: 1
-          col-span: 7
-          label: '&a确认前往'
+          col-span: 6
+          label: '&a立即前往'
           close-on-click: true
           execute:
-            - 'tell: &a正在为你连接到 %trmenu_dialog_option_target%'
-        cancel:
+            - 'tell: &a正在连接 %trmenu_dialog_option_target%'
+            - 'tell: &7附加模式: %trmenu_dialog_option_server_modes%'
+        queue:
           kind: action
           anchor: footer
           row: 1
-          col-start: 8
-          col-span: 5
-          label: '&c取消'
-          close-on-click: true
+          col-start: 7
+          col-span: 6
+          label: '&e加入队列'
+          close-on-click: false
           execute:
-            - 'close'
+            - 'tell: &e已加入 %trmenu_dialog_option_target% 队列'
+            - 'tell: &7附加模式: %trmenu_dialog_option_server_modes%'

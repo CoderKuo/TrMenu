@@ -8,6 +8,7 @@ data class DialogPageSpec(
     val title: String? = null,
     val body: List<DialogBodySpec> = emptyList(),
     val actions: List<DialogActionSpec> = emptyList(),
+    val exitAction: DialogActionSpec? = null,
     val layoutSpec: DialogLayoutSpec? = null,
     val onClose: Reactions? = null,
 )

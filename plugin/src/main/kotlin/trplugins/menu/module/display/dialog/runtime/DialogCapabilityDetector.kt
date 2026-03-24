@@ -4,7 +4,7 @@ import org.bukkit.entity.Player
 import taboolib.module.nms.MinecraftVersion
 import taboolib.module.nms.nmsProxy
 import trplugins.menu.TrMenu
-import trplugins.menu.api.receptacle.dialog.DialogNms
+import trplugins.menu.api.receptacle.dialog.DialogNMS
 import trplugins.menu.module.display.dialog.mixin.NoopDialogMixinAssist
 import trplugins.menu.module.display.dialog.model.DialogMenuSpec
 
@@ -18,7 +18,7 @@ object DialogCapabilityDetector {
         if (!TrMenu.SETTINGS.getBoolean("Options.Dialogs.Enable", true)) {
             return false
         }
-        return runCatching { nmsProxy<DialogNms>().supportsDialogs() }.getOrDefault(false)
+        return runCatching { nmsProxy<DialogNMS>().supportsDialogs() }.getOrDefault(false)
     }
 
     fun isAvailable(player: Player, spec: DialogMenuSpec): Boolean {

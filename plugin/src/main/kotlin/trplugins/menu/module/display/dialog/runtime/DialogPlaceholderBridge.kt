@@ -27,8 +27,14 @@ object DialogPlaceholderBridge {
         val meta = Metadata.getMeta(session.viewer)
         response.actionId?.also { meta["dialog_action"] = it }
         response.values.forEach { (key, value) ->
+            val stringValue = value?.toString() ?: ""
             state.values[key] = value
-            meta["dialog_$key"] = value?.toString() ?: ""
+            meta["dialog_$key"] = stringValue
+            when {
+                state.inputIds.contains(key) -> meta["dialog_input_$key"] = stringValue
+                state.optionIds.contains(key) -> meta["dialog_option_$key"] = stringValue
+                state.booleanIds.contains(key) -> meta["dialog_boolean_$key"] = stringValue
+            }
         }
     }
 }

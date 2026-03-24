@@ -39,8 +39,46 @@ object DialogCompiler {
             page
         }
 
-        val body = resolvedPage.body.map { compileBody(session, it) }
+        val body = mutableListOf<DialogElementPayload>()
+        val inputIds = mutableSetOf<String>()
+        val optionIds = mutableSetOf<String>()
+        val booleanIds = mutableSetOf<String>()
+        val multiOptionGroups = mutableMapOf<String, Map<String, String>>()
+        resolvedPage.body.forEach { bodySpec ->
+            when (bodySpec) {
+                is DialogInputSpec -> {
+                    body += compileBody(session, bodySpec)
+                    inputIds += bodySpec.id
+                }
+                is DialogBooleanSpec -> {
+                    body += compileBody(session, bodySpec)
+                    booleanIds += bodySpec.id
+                }
+                is DialogSingleOptionSpec -> {
+                    body += compileBody(session, bodySpec)
+                    optionIds += bodySpec.id
+                }
+                is DialogNumberRangeSpec -> {
+                    body += compileBody(session, bodySpec)
+                    optionIds += bodySpec.id
+                }
+                is DialogMultiOptionSpec -> {
+                    val expansion = compileMultiOption(session, bodySpec)
+                    body += expansion.elements
+                    booleanIds += expansion.syntheticIds.keys
+                    optionIds += bodySpec.id
+                    multiOptionGroups[bodySpec.id] = expansion.syntheticIds
+                }
+                else -> body += compileBody(session, bodySpec)
+            }
+        }
+
         val actions = resolvedPage.actions.map { compileAction(session, it) }
+        val exitAction = resolvedPage.exitAction?.let { compileAction(session, it) }
+        val actionMap = buildMap<String, DialogActionSpec> {
+            resolvedPage.actions.forEach { put(it.id, it) }
+            resolvedPage.exitAction?.also { put(it.id, it) }
+        }
         val payload = DialogPayload(
             menuId = menu.id,
             pageId = resolvedPage.id,
@@ -50,20 +88,19 @@ object DialogCompiler {
             externalTitle = spec.externalTitle?.let(session::parse),
             allowEscClose = spec.allowEscClose,
             body = body,
-            actions = actions
+            actions = actions,
+            exitAction = exitAction
         )
         val state = DialogRuntimeState(
             menuId = menu.id,
             page = pageIndex,
             pageId = resolvedPage.id,
             payload = payload,
-            actionMap = resolvedPage.actions.associateBy { it.id },
-            inputIds = resolvedPage.body.filterIsInstance<DialogInputSpec>().mapTo(mutableSetOf()) { it.id },
-            optionIds = resolvedPage.body.filterIsInstance<DialogSingleOptionSpec>().mapTo(mutableSetOf()) { it.id }.also {
-                it.addAll(resolvedPage.body.filterIsInstance<DialogMultiOptionSpec>().map { bodySpec -> bodySpec.id })
-                it.addAll(resolvedPage.body.filterIsInstance<DialogNumberRangeSpec>().map { bodySpec -> bodySpec.id })
-            },
-            booleanIds = resolvedPage.body.filterIsInstance<DialogBooleanSpec>().mapTo(mutableSetOf()) { it.id }
+            actionMap = actionMap,
+            inputIds = inputIds,
+            optionIds = optionIds,
+            booleanIds = booleanIds,
+            multiOptionGroups = multiOptionGroups
         )
         return DialogCompileResult(payload, state)
     }
@@ -80,6 +117,7 @@ object DialogCompiler {
 
         val body = mutableListOf<DialogBodySpec>()
         val actions = mutableListOf<DialogActionSpec>()
+        var exitAction = page.exitAction
         nodes.forEach { node ->
             val width = node.widget.width ?: mapWidth(node.colSpan, spec.compiler)
             when (node.widget.kind) {
@@ -126,17 +164,25 @@ object DialogCompiler {
                     node.widget.defaultValue?.toDoubleOrNull(),
                     width
                 )
-                DialogWidgetKind.ACTION -> actions += DialogActionSpec(
-                    node.id,
-                    node.widget.label ?: node.id,
-                    width,
-                    node.widget.closeOnClick,
-                    node.widget.nextPage,
-                    Reactions.ofReaction(TrMenu.actionHandle, node.widget.actions)
-                )
+                DialogWidgetKind.ACTION -> {
+                    val action = DialogActionSpec(
+                        node.id,
+                        node.widget.label ?: node.id,
+                        width,
+                        node.widget.closeOnClick,
+                        node.widget.nextPage,
+                        node.widget.exitAction,
+                        Reactions.ofReaction(TrMenu.actionHandle, node.widget.actions)
+                    )
+                    if (action.exitAction) {
+                        exitAction = action
+                    } else {
+                        actions += action
+                    }
+                }
             }
         }
-        return page.copy(body = body, actions = actions)
+        return page.copy(body = body, actions = actions, exitAction = exitAction)
     }
 
     private fun validateWidget(widget: trplugins.menu.module.display.dialog.model.DialogWidgetSpec, compiler: trplugins.menu.module.display.dialog.model.DialogCompilerSpec, layoutSpec: DialogLayoutSpec) {
@@ -167,8 +213,25 @@ object DialogCompiler {
             label = session.parse(spec.label),
             width = spec.width,
             closesDialog = spec.closesDialog,
-            nextPage = spec.nextPage
+            nextPage = spec.nextPage,
+            exitAction = spec.exitAction
         )
+    }
+
+    private fun compileMultiOption(session: MenuSession, spec: DialogMultiOptionSpec): MultiOptionExpansion {
+        val syntheticIds = linkedMapOf<String, String>()
+        val elements = spec.options.mapIndexed { index, option ->
+            val syntheticId = "${spec.id}__${index}"
+            syntheticIds[syntheticId] = option.id
+            DialogElementPayload(
+                id = syntheticId,
+                type = "boolean",
+                label = session.parse(option.title),
+                width = spec.width,
+                boolValue = spec.defaultValue.contains(option.id)
+            )
+        }
+        return MultiOptionExpansion(elements, syntheticIds)
     }
 
     private fun compileBody(session: MenuSession, spec: DialogBodySpec): DialogElementPayload {
@@ -253,4 +316,9 @@ object DialogCompiler {
             }
         }
     }
+
+    private data class MultiOptionExpansion(
+        val elements: List<DialogElementPayload>,
+        val syntheticIds: Map<String, String>
+    )
 }

@@ -3,12 +3,11 @@ package trplugins.menu.module.display.dialog.runtime
 import taboolib.common.platform.function.adaptPlayer
 import taboolib.common.platform.function.warning
 import taboolib.module.nms.nmsProxy
-import trplugins.menu.api.receptacle.dialog.DialogNms
+import trplugins.menu.api.receptacle.dialog.DialogNMS
 import trplugins.menu.api.receptacle.dialog.DialogResponseData
 import trplugins.menu.module.display.Menu
 import trplugins.menu.module.display.MenuSession
 import trplugins.menu.module.display.dialog.compiler.DialogCompiler
-import trplugins.menu.module.display.dialog.compiler.DialogCompileException
 
 object DialogMenuRenderer {
 
@@ -29,7 +28,7 @@ object DialogMenuRenderer {
         DialogPlaceholderBridge.clear(session.viewer)
         DialogPlaceholderBridge.writeOpenState(session, compiled.state)
         runCatching {
-            nmsProxy<DialogNms>().open(session.viewer, compiled.payload)
+            nmsProxy<DialogNMS>().open(session.viewer, compiled.payload)
         }.onFailure {
             fallback(menu, session, it.message ?: "Dialog open failed")
         }
@@ -52,7 +51,7 @@ object DialogMenuRenderer {
 
     fun close(session: MenuSession, sendPacket: Boolean = true) {
         if (sendPacket) {
-            runCatching { nmsProxy<DialogNms>().close(session.viewer) }
+            runCatching { nmsProxy<DialogNMS>().close(session.viewer) }
         }
         session.dialogState?.let { state ->
             session.menu?.dialogSpec?.page(state.page)?.onClose?.eval(adaptPlayer(session.viewer))
@@ -64,16 +63,22 @@ object DialogMenuRenderer {
 
     fun handleResponse(session: MenuSession, response: DialogResponseData) {
         val state = session.dialogState ?: return
-        val actionId = response.actionId
-        DialogPlaceholderBridge.writeResponse(session, state, response)
-        if (response.closeAction) {
-            close(session)
+        val normalized = response.copy(values = normalizeResponseValues(state, response.values))
+        val actionId = normalized.actionId
+        DialogPlaceholderBridge.writeResponse(session, state, normalized)
+        if (normalized.closeAction) {
+            if (state.payload.allowEscClose) {
+                close(session)
+            } else {
+                refresh(session)
+            }
             return
         }
         val action = actionId?.let { state.actionMap[it] } ?: return
         val success = action.actions.eval(adaptPlayer(session.viewer))
         if (!success) {
             action.denyActions?.eval(adaptPlayer(session.viewer))
+            refresh(session)
             return
         }
         if (action.nextPage != null) {
@@ -82,7 +87,26 @@ object DialogMenuRenderer {
         }
         if (action.closesDialog) {
             close(session)
+            return
         }
+        refresh(session)
+    }
+
+    private fun normalizeResponseValues(state: trplugins.menu.module.display.dialog.model.DialogRuntimeState, values: Map<String, Any?>): Map<String, Any?> {
+        if (state.multiOptionGroups.isEmpty()) {
+            return values
+        }
+        val normalized = values.toMutableMap()
+        state.multiOptionGroups.forEach { (groupId, mapping) ->
+            val selected = mapping.entries
+                .filter { (syntheticId, _) ->
+                    val value = values[syntheticId]
+                    value == true || value?.toString().equals("true", true)
+                }
+                .map { it.value }
+            normalized[groupId] = selected.joinToString(",")
+        }
+        return normalized
     }
 
     private fun fallback(menu: Menu, session: MenuSession, reason: String) {

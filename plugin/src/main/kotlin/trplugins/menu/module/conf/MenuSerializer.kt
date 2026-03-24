@@ -116,8 +116,19 @@ object MenuSerializer : ISerializer {
             }
         }
 
+        val dialog = if (renderType == MenuRenderType.DIALOG) {
+            serializeDialog(conf)
+        } else null
+        if (dialog != null && !dialog.succeed()) {
+            result.submitErrors(dialog).also { return result }
+        }
+
         // 读取菜单布局
-        val layout = serializeLayout(conf)
+        val layout = if (renderType == MenuRenderType.DIALOG) {
+            serializeDialogPlaceholderLayout((dialog?.result as? DialogMenuSpec)?.pageCount() ?: 1)
+        } else {
+            serializeLayout(conf)
+        }
         if (!layout.succeed()) {
             result.submitErrors(layout).also { return result }
         }
@@ -131,13 +142,6 @@ object MenuSerializer : ISerializer {
             result.submitErrors(icons).also {
                 return result
             }
-        }
-
-        val dialog = if (renderType == MenuRenderType.DIALOG) {
-            serializeDialog(conf)
-        } else null
-        if (dialog != null && !dialog.succeed()) {
-            result.submitErrors(dialog).also { return result }
         }
 
         // 读取菜单语言
@@ -250,6 +254,16 @@ object MenuSerializer : ISerializer {
         }
 
         result.result = settings
+        return result
+    }
+
+    private fun serializeDialogPlaceholderLayout(pageCount: Int): SerialzeResult {
+        val result = SerialzeResult(SerialzeResult.Type.MENU_LAYOUT)
+        val safePages = pageCount.coerceAtLeast(1)
+        val layouts = Array(safePages) {
+            Layout(1, InventoryType.CHEST, emptyList(), emptyList())
+        }
+        result.result = MenuLayout(layouts)
         return result
     }
 
@@ -504,8 +518,17 @@ object MenuSerializer : ISerializer {
 
     private fun serializeDialogPage(index: Int, section: Configuration): DialogPageSpec {
         val layout = serializeDialogLayout(section)
-        val actions = if (layout != null) emptyList() else section.getMapList(Property.DIALOG_PAGE_ACTIONS.default).mapIndexed { actionIndex, actionMap ->
+        val pageActions = if (layout != null) emptyList() else section.getMapList(Property.DIALOG_PAGE_ACTIONS.default).mapIndexed { actionIndex, actionMap ->
             serializeDialogAction(actionIndex, Property.asSection(actionMap) ?: Configuration.empty())
+        }
+        val explicitExitAction = section["Exit-Action"]?.let {
+            serializeDialogAction(-1, Property.asSection(it) ?: Configuration.empty()).copy(exitAction = true)
+        }
+        val (exitAction, actions) = if (explicitExitAction != null) {
+            explicitExitAction to pageActions.filterNot { it.exitAction }
+        } else {
+            val marked = pageActions.firstOrNull { it.exitAction }
+            marked to pageActions.filterNot { it.exitAction }
         }
         val body = if (layout != null) emptyList() else section.getMapList(Property.DIALOG_PAGE_BODY.default).mapIndexedNotNull { bodyIndex, bodyMap ->
             serializeDialogBody(bodyIndex, Property.asSection(bodyMap) ?: Configuration.empty())
@@ -516,6 +539,7 @@ object MenuSerializer : ISerializer {
             title = Property.DIALOG_PAGE_TITLE.ofString(section),
             body = body,
             actions = actions,
+            exitAction = exitAction,
             layoutSpec = layout,
             onClose = Reactions.ofReaction(TrMenu.actionHandle, section["On-Close"])
         )
@@ -576,6 +600,7 @@ object MenuSerializer : ISerializer {
             width = section.getInt("Width").takeIf { it > 0 },
             closesDialog = section.getBoolean("Close-On-Click", true),
             nextPage = section.getString("Next-Page")?.toIntOrNull() ?: section.getInt("Next-Page").takeIf { section.contains("Next-Page") },
+            exitAction = section.getBoolean("Exit", false),
             actions = Reactions.ofReaction(TrMenu.actionHandle, section["Execute"] ?: section["Actions"]),
             denyActions = section["Deny"]?.let { Reactions.ofReaction(TrMenu.actionHandle, it) }
         )
@@ -617,6 +642,7 @@ object MenuSerializer : ISerializer {
                 maxLength = widget.getInt("max-length").takeIf { it > 0 },
                 closeOnClick = widget.getBoolean("close-on-click", true),
                 nextPage = widget.getString("next-page")?.toIntOrNull(),
+                exitAction = widget.getBoolean("exit", false) || widget.getBoolean("exit-action", false),
                 actions = Property.asList(widget["execute"] ?: widget["actions"]),
                 condition = widget.getString("condition") ?: ""
             )

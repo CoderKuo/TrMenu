@@ -1,0 +1,58 @@
+Title: '&0CONFIRMATION 示例 - 删除确认'
+Render-Type: DIALOG
+
+Dialog:
+  Min-Version: '1.21.6'
+  Fallback-Menu: 'Example'
+  Allow-Esc-Close: false
+  External-Title: '&8Dialogs / Confirmation'
+
+  Pages:
+    - Id: 'confirm_delete'
+      Type: 'confirmation'
+      Title: '&0CONFIRMATION 示例 - 删除确认'
+      Body:
+        - Id: 'warning'
+          Renderer: 'plain_message'
+          Width: 320
+          Text:
+            - '&7这是一个 &6CONFIRMATION&7 类型示例。'
+            - '&7请确认是否清理当前活动缓存。'
+        - Id: 'delete_reason'
+          Renderer: 'input'
+          Width: 320
+          Label: '&7删除原因'
+          Placeholder: '&8例如：准备重新开始'
+          Max-Length: 24
+        - Id: 'cleanup_targets'
+          Renderer: 'multi_option'
+          Width: 320
+          Label: '&7要清理的内容'
+          Default-Value:
+            - 'homes'
+            - 'mail'
+          Options:
+            - Id: 'homes'
+              Title: '&e家园数据'
+              Description: '&7删除家园点与家园设置'
+            - Id: 'mail'
+              Title: '&b邮件数据'
+              Description: '&7删除未领取的邮件记录'
+            - Id: 'stats'
+              Title: '&c统计数据'
+              Description: '&7删除本地缓存的统计信息'
+      Actions:
+        - Id: 'confirm_delete'
+          Label: '&c确认删除'
+          Width: 160
+          Close-On-Click: true
+          Execute:
+            - 'set-meta: confirm_reason %trmenu_dialog_input_delete_reason%'
+            - 'set-meta: confirm_targets %trmenu_dialog_option_cleanup_targets%'
+            - 'tell: &c已确认删除, 范围: %trmenu_dialog_option_cleanup_targets%'
+        - Id: 'cancel_delete'
+          Label: '&a取消操作'
+          Width: 160
+          Close-On-Click: true
+          Execute:
+            - 'tell: &a已取消删除请求'
