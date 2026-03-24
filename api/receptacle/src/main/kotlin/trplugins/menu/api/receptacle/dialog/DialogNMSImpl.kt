@@ -274,6 +274,7 @@ class DialogNMSImpl : DialogNMS() {
     }
 
     private fun buildSingleOptionInput(element: DialogElementPayload): Any {
+        require(element.options.isNotEmpty()) { "Dialog single_option ${element.id} requires at least one option." }
         val entryClass = singleOptionEntryClass()
         val defaultValue = element.value
         val entries = element.options.map { option ->

@@ -55,6 +55,7 @@ object DialogCompiler {
                     booleanIds += bodySpec.id
                 }
                 is DialogSingleOptionSpec -> {
+                    requireOptions(bodySpec.id, bodySpec.options, "single_option")
                     body += compileBody(session, bodySpec)
                     optionIds += bodySpec.id
                 }
@@ -63,6 +64,7 @@ object DialogCompiler {
                     optionIds += bodySpec.id
                 }
                 is DialogMultiOptionSpec -> {
+                    requireOptions(bodySpec.id, bodySpec.options, "multi_option")
                     val expansion = compileMultiOption(session, bodySpec)
                     body += expansion.elements
                     booleanIds += expansion.syntheticIds.keys
@@ -205,6 +207,12 @@ object DialogCompiler {
 
     private fun mapWidth(colSpan: Int, compiler: trplugins.menu.module.display.dialog.model.DialogCompilerSpec): Int {
         return ((colSpan.toDouble() / compiler.gridColumns.toDouble()) * compiler.contentMaxWidth.toDouble()).toInt().coerceAtLeast(80)
+    }
+
+    private fun requireOptions(id: String, options: List<DialogOptionSpec>, type: String) {
+        if (options.isEmpty()) {
+            throw DialogCompileException("Dialog $type widget $id requires at least one option.")
+        }
     }
 
     private fun compileAction(session: MenuSession, spec: DialogActionSpec): DialogActionPayload {

@@ -656,12 +656,13 @@ object MenuSerializer : ISerializer {
     }
 
     private fun serializeDialogOptions(section: ConfigurationSection): List<DialogOptionSpec> {
-        return section.getMapList("Options").mapIndexed { index, optionMap ->
+        val optionMaps = section.getMapList("Options").ifEmpty { section.getMapList("options") }
+        return optionMaps.mapIndexed { index, optionMap ->
             val option = Property.asSection(optionMap) ?: Configuration.empty()
             DialogOptionSpec(
-                id = option.getString("Id") ?: "option_$index",
-                title = option.getString("Title") ?: option.getString("Name") ?: "Option-$index",
-                description = option.getString("Description")
+                id = option.getString("id") ?: option.getString("Id") ?: "option_$index",
+                title = option.getString("title") ?: option.getString("Title") ?: option.getString("name") ?: option.getString("Name") ?: "Option-$index",
+                description = option.getString("description") ?: option.getString("Description")
             )
         }
     }
