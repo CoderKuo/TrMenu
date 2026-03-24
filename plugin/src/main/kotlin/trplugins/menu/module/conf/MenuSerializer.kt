@@ -6,6 +6,7 @@ import taboolib.common.platform.function.pluginId
 import taboolib.common.platform.function.warning
 import taboolib.common.util.asList
 import taboolib.library.configuration.ConfigurationSection
+import taboolib.library.reflex.Reflex.Companion.invokeConstructor
 import taboolib.library.xseries.XItemFlag
 import taboolib.module.configuration.Configuration
 import taboolib.module.configuration.Type
@@ -742,7 +743,8 @@ object MenuSerializer : ISerializer {
     private fun serializeLocaleNode(code: String, map: Map<String, Any>, node: String?): taboolib.module.lang.Type? {
         return if (map.containsKey("type") || map.containsKey("==")) {
             val type = (map["type"] ?: map["=="]).toString().lowercase()
-            val typeInstance = Language.languageType[type]?.getDeclaredConstructor()?.newInstance()
+            @Suppress("UNCHECKED_CAST")
+            val typeInstance = (Language.languageType[type] as? Class<taboolib.module.lang.Type>)?.invokeConstructor()
             if (typeInstance != null) {
                 typeInstance.init(map)
             } else {

@@ -3,15 +3,14 @@ package trplugins.menu.api.receptacle.dialog
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
+import taboolib.library.reflex.Reflex.Companion.getProperty
+import taboolib.library.reflex.Reflex.Companion.invokeConstructor
+import taboolib.library.reflex.Reflex.Companion.invokeMethod
 import taboolib.module.nms.MinecraftVersion
 import taboolib.module.nms.sendPacket
-import java.lang.reflect.Constructor
-import java.lang.reflect.Field
-import java.lang.reflect.Method
-import java.lang.reflect.Modifier
+import trplugins.menu.util.ReflexHelper
 import java.util.Locale
 import java.util.Optional
-import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.max
 import kotlin.math.min
 
@@ -34,25 +33,20 @@ class DialogNMSImpl : DialogNMS() {
         HOLDER_CLASS_NAME
     )
 
-    private val classCache = ConcurrentHashMap<String, Class<*>>()
-    private val constructorCache = ConcurrentHashMap<ConstructorCacheKey, Constructor<*>>()
-    private val methodCache = ConcurrentHashMap<MethodCacheKey, Method>()
-    private val fieldCache = ConcurrentHashMap<FieldCacheKey, Field>()
-
     private val resolvedDialogKeyClass by lazy(LazyThreadSafetyMode.NONE) {
-        resolveFirstClassOrNull(DIALOG_KEY_CLASS_NAMES)
+        ReflexHelper.resolveFirstClassOrNull(DIALOG_KEY_CLASS_NAMES)
     }
 
     private val resolvedChatComponentClass by lazy(LazyThreadSafetyMode.NONE) {
-        resolveFirstClassOrNull(CHAT_COMPONENT_CLASS_NAMES)
+        ReflexHelper.resolveFirstClassOrNull(CHAT_COMPONENT_CLASS_NAMES)
     }
 
     private val resolvedSingleOptionEntryClass by lazy(LazyThreadSafetyMode.NONE) {
-        resolveFirstClassOrNull(SINGLE_OPTION_ENTRY_CLASS_NAMES)
+        ReflexHelper.resolveFirstClassOrNull(SINGLE_OPTION_ENTRY_CLASS_NAMES)
     }
 
     private val resolvedNumberRangeInfoClass by lazy(LazyThreadSafetyMode.NONE) {
-        resolveFirstClassOrNull(NUMBER_RANGE_INFO_CLASS_NAMES)
+        ReflexHelper.resolveFirstClassOrNull(NUMBER_RANGE_INFO_CLASS_NAMES)
     }
 
     private val clearDialogPacketInstance by lazy(LazyThreadSafetyMode.NONE) {
@@ -75,11 +69,7 @@ class DialogNMSImpl : DialogNMS() {
         check(supportsDialogs()) { "Dialogs NMS bridge is unavailable on the current runtime." }
         val dialog = buildDialog(payload)
         val holder = holderDirect(dialog)
-        val packet = newInstance(
-            CLIENTBOUND_SHOW_DIALOG_PACKET_CLASS_NAME,
-            arrayOf(requiredClass(HOLDER_CLASS_NAME)),
-            holder
-        )
+        val packet = newInstance(CLIENTBOUND_SHOW_DIALOG_PACKET_CLASS_NAME, holder)
         player.sendPacket(packet)
     }
 
@@ -136,10 +126,6 @@ class DialogNMSImpl : DialogNMS() {
         }
         return newInstance(
             NOTICE_DIALOG_CLASS_NAME,
-            arrayOf(
-                requiredClass(COMMON_DIALOG_DATA_CLASS_NAME),
-                requiredClass(ACTION_BUTTON_CLASS_NAME)
-            ),
             common,
             actions.first()
         )
@@ -151,11 +137,6 @@ class DialogNMSImpl : DialogNMS() {
         }
         return newInstance(
             CONFIRMATION_DIALOG_CLASS_NAME,
-            arrayOf(
-                requiredClass(COMMON_DIALOG_DATA_CLASS_NAME),
-                requiredClass(ACTION_BUTTON_CLASS_NAME),
-                requiredClass(ACTION_BUTTON_CLASS_NAME)
-            ),
             common,
             actions[0],
             actions[1]
@@ -167,12 +148,6 @@ class DialogNMSImpl : DialogNMS() {
         val columns = min(3, max(1, if (visibleButtons >= 2) 2 else 1))
         return newInstance(
             MULTI_ACTION_DIALOG_CLASS_NAME,
-            arrayOf(
-                requiredClass(COMMON_DIALOG_DATA_CLASS_NAME),
-                List::class.java,
-                Optional::class.java,
-                Int::class.javaPrimitiveType!!
-            ),
             common,
             actions,
             Optional.ofNullable(exitAction),
@@ -198,15 +173,6 @@ class DialogNMSImpl : DialogNMS() {
         val effectiveAllowEscClose = payload.allowEscClose && payload.exitAction == null
         return newInstance(
             COMMON_DIALOG_DATA_CLASS_NAME,
-            arrayOf(
-                chatComponentClass(),
-                Optional::class.java,
-                Boolean::class.javaPrimitiveType!!,
-                Boolean::class.javaPrimitiveType!!,
-                requiredClass(DIALOG_ACTION_CLASS_NAME),
-                List::class.java,
-                List::class.java
-            ),
             component(payload.title ?: payload.externalTitle ?: payload.menuId),
             optionalComponent(payload.externalTitle),
             effectiveAllowEscClose,
@@ -220,30 +186,17 @@ class DialogNMSImpl : DialogNMS() {
     private fun buildActionButton(payload: DialogPayload, action: DialogActionPayload): Any {
         val button = newInstance(
             COMMON_BUTTON_DATA_CLASS_NAME,
-            arrayOf(
-                chatComponentClass(),
-                Optional::class.java,
-                Int::class.javaPrimitiveType!!
-            ),
             component(action.label),
             Optional.empty<Any>(),
             action.width ?: DEFAULT_BUTTON_WIDTH
         )
         val customAction = newInstance(
             CUSTOM_ALL_ACTION_CLASS_NAME,
-            arrayOf(
-                dialogKeyClass(),
-                Optional::class.java
-            ),
             actionKey(payload, action.id),
             Optional.empty<Any>()
         )
         return newInstance(
             ACTION_BUTTON_CLASS_NAME,
-            arrayOf(
-                requiredClass(COMMON_BUTTON_DATA_CLASS_NAME),
-                Optional::class.java
-            ),
             button,
             Optional.of(customAction)
         )
@@ -253,10 +206,6 @@ class DialogNMSImpl : DialogNMS() {
         val text = if (element.text.isEmpty()) element.label.orEmpty() else element.text.joinToString("\n")
         return newInstance(
             PLAIN_MESSAGE_CLASS_NAME,
-            arrayOf(
-                chatComponentClass(),
-                Int::class.javaPrimitiveType!!
-            ),
             component(text),
             element.width ?: DEFAULT_TEXT_WIDTH
         )
@@ -276,10 +225,6 @@ class DialogNMSImpl : DialogNMS() {
             Optional.of(
                 newInstance(
                     PLAIN_MESSAGE_CLASS_NAME,
-                    arrayOf(
-                        chatComponentClass(),
-                        Int::class.javaPrimitiveType!!
-                    ),
                     component(it),
                     element.width ?: DEFAULT_TEXT_WIDTH
                 )
@@ -287,14 +232,6 @@ class DialogNMSImpl : DialogNMS() {
         } ?: Optional.empty<Any>()
         return newInstance(
             ITEM_BODY_CLASS_NAME,
-            arrayOf(
-                requiredClass(NMS_ITEM_STACK_CLASS_NAME),
-                Optional::class.java,
-                Boolean::class.javaPrimitiveType!!,
-                Boolean::class.javaPrimitiveType!!,
-                Int::class.javaPrimitiveType!!,
-                Int::class.javaPrimitiveType!!
-            ),
             item,
             description,
             true,
@@ -307,14 +244,6 @@ class DialogNMSImpl : DialogNMS() {
     private fun buildTextInput(element: DialogElementPayload): Any {
         val control = newInstance(
             TEXT_INPUT_CLASS_NAME,
-            arrayOf(
-                Int::class.javaPrimitiveType!!,
-                chatComponentClass(),
-                Boolean::class.javaPrimitiveType!!,
-                String::class.java,
-                Int::class.javaPrimitiveType!!,
-                Optional::class.java
-            ),
             element.width ?: DEFAULT_INPUT_WIDTH,
             component(element.label ?: element.id),
             true,
@@ -324,7 +253,6 @@ class DialogNMSImpl : DialogNMS() {
         )
         return newInstance(
             INPUT_CLASS_NAME,
-            arrayOf(String::class.java, requiredClass(INPUT_CONTROL_CLASS_NAME)),
             element.id,
             control
         )
@@ -333,12 +261,6 @@ class DialogNMSImpl : DialogNMS() {
     private fun buildBooleanInput(element: DialogElementPayload): Any {
         val control = newInstance(
             BOOLEAN_INPUT_CLASS_NAME,
-            arrayOf(
-                chatComponentClass(),
-                Boolean::class.javaPrimitiveType!!,
-                String::class.java,
-                String::class.java
-            ),
             component(element.label ?: element.id),
             element.boolValue ?: false,
             "true",
@@ -346,7 +268,6 @@ class DialogNMSImpl : DialogNMS() {
         )
         return newInstance(
             INPUT_CLASS_NAME,
-            arrayOf(String::class.java, requiredClass(INPUT_CONTROL_CLASS_NAME)),
             element.id,
             control
         )
@@ -357,8 +278,7 @@ class DialogNMSImpl : DialogNMS() {
         val defaultValue = element.value
         val entries = element.options.map { option ->
             newInstance(
-                entryClass.name,
-                arrayOf(String::class.java, Optional::class.java, Boolean::class.javaPrimitiveType!!),
+                entryClass,
                 option.id,
                 optionalComponent(option.title),
                 option.id == defaultValue
@@ -366,12 +286,6 @@ class DialogNMSImpl : DialogNMS() {
         }
         val control = newInstance(
             SINGLE_OPTION_INPUT_CLASS_NAME,
-            arrayOf(
-                Int::class.javaPrimitiveType!!,
-                List::class.java,
-                chatComponentClass(),
-                Boolean::class.javaPrimitiveType!!
-            ),
             element.width ?: DEFAULT_INPUT_WIDTH,
             entries,
             component(element.label ?: element.id),
@@ -379,7 +293,6 @@ class DialogNMSImpl : DialogNMS() {
         )
         return newInstance(
             INPUT_CLASS_NAME,
-            arrayOf(String::class.java, requiredClass(INPUT_CONTROL_CLASS_NAME)),
             element.id,
             control
         )
@@ -389,13 +302,7 @@ class DialogNMSImpl : DialogNMS() {
         val initial = element.value?.toFloatOrNull()
         val rangeInfoClass = numberRangeInfoClass()
         val rangeInfo = newInstance(
-            rangeInfoClass.name,
-            arrayOf(
-                Float::class.javaPrimitiveType!!,
-                Float::class.javaPrimitiveType!!,
-                Optional::class.java,
-                Optional::class.java
-            ),
+            rangeInfoClass,
             (element.min ?: 0.0).toFloat(),
             (element.max ?: 1.0).toFloat(),
             Optional.ofNullable(initial),
@@ -403,12 +310,6 @@ class DialogNMSImpl : DialogNMS() {
         )
         val control = newInstance(
             NUMBER_RANGE_INPUT_CLASS_NAME,
-            arrayOf(
-                Int::class.javaPrimitiveType!!,
-                chatComponentClass(),
-                String::class.java,
-                rangeInfoClass
-            ),
             element.width ?: DEFAULT_INPUT_WIDTH,
             component(element.label ?: element.id),
             "%s",
@@ -416,7 +317,6 @@ class DialogNMSImpl : DialogNMS() {
         )
         return newInstance(
             INPUT_CLASS_NAME,
-            arrayOf(String::class.java, requiredClass(INPUT_CONTROL_CLASS_NAME)),
             element.id,
             control
         )
@@ -426,13 +326,12 @@ class DialogNMSImpl : DialogNMS() {
         val raw = text.ifBlank { " " }
         val craftChatMessage = runCatching { craftBukkitClass("util.CraftChatMessage") }.getOrNull()
         if (craftChatMessage != null) {
-            invokeStaticAliasOrNull(craftChatMessage, CRAFT_CHAT_MESSAGE_PARSE_METHOD_NAMES, arrayOf(String::class.java), raw)
+            invokeStaticAliasOrNull(craftChatMessage, CRAFT_CHAT_MESSAGE_PARSE_METHOD_NAMES, raw)
                 ?.let { return it }
         }
         return invokeStaticAlias(
             chatComponentClass(),
             COMPONENT_LITERAL_METHOD_NAMES,
-            arrayOf(String::class.java),
             raw
         )
     }
@@ -443,11 +342,11 @@ class DialogNMSImpl : DialogNMS() {
 
     private fun toNmsItem(item: ItemStack): Any {
         val craftItemStack = craftBukkitClass("inventory.CraftItemStack")
-        return invokeStatic(craftItemStack, "asNMSCopy", arrayOf(ItemStack::class.java), item)
+        return invokeStatic(craftItemStack, "asNMSCopy", item)
     }
 
     private fun holderDirect(value: Any): Any {
-        return invokeStatic(requiredClass(HOLDER_CLASS_NAME), "direct", arrayOf(Any::class.java), value)
+        return invokeStatic(requiredClass(HOLDER_CLASS_NAME), "direct", value)
     }
 
     private fun actionKey(payload: DialogPayload, actionId: String): Any {
@@ -462,26 +361,25 @@ class DialogNMSImpl : DialogNMS() {
 
     private fun createDialogKey(namespace: String, path: String): Any {
         val keyClass = dialogKeyClass()
-        invokeStaticAliasOrNull(keyClass, DIALOG_KEY_FACTORY_METHOD_NAMES, arrayOf(String::class.java, String::class.java), namespace, path)
+        invokeStaticAliasOrNull(keyClass, DIALOG_KEY_FACTORY_METHOD_NAMES, namespace, path)
             ?.let { return it }
-        runCatching {
-            findConstructor(keyClass, arrayOf(String::class.java, String::class.java)).newInstance(namespace, path)
-        }.getOrNull()?.let { return it }
+        ReflexHelper.invokeConstructorOrNull(keyClass, namespace, path)
+            ?.let { return it }
         val fullPath = "$namespace:$path"
-        invokeStaticAliasOrNull(keyClass, DIALOG_KEY_PARSER_METHOD_NAMES, arrayOf(String::class.java), fullPath)
+        invokeStaticAliasOrNull(keyClass, DIALOG_KEY_PARSER_METHOD_NAMES, fullPath)
             ?.let { return it }
         throw NoSuchMethodException("Unable to construct dialog key for ${keyClass.name}")
     }
 
     private fun dialogKeyNamespace(key: Any): String? {
-        (invokeMethodAliasOrNull(key, DIALOG_KEY_NAMESPACE_METHOD_NAMES) as? String)?.let { return it }
-        readStringFieldOrNull(key, DIALOG_KEY_NAMESPACE_FIELD_NAMES)?.let { return it }
+        (ReflexHelper.invokeMethodAliasOrNull(key, DIALOG_KEY_NAMESPACE_METHOD_NAMES) as? String)?.let { return it }
+        (ReflexHelper.getPropertyAliasOrNull(key, DIALOG_KEY_NAMESPACE_FIELD_NAMES) as? String)?.let { return it }
         return parseDialogKeyString(key.toString())?.first
     }
 
     private fun dialogKeyPath(key: Any): String? {
-        (invokeMethodAliasOrNull(key, DIALOG_KEY_PATH_METHOD_NAMES) as? String)?.let { return it }
-        readStringFieldOrNull(key, DIALOG_KEY_PATH_FIELD_NAMES)?.let { return it }
+        (ReflexHelper.invokeMethodAliasOrNull(key, DIALOG_KEY_PATH_METHOD_NAMES) as? String)?.let { return it }
+        (ReflexHelper.getPropertyAliasOrNull(key, DIALOG_KEY_PATH_FIELD_NAMES) as? String)?.let { return it }
         return parseDialogKeyString(key.toString())?.second
     }
 
@@ -494,7 +392,7 @@ class DialogNMSImpl : DialogNMS() {
     }
 
     private fun dialogAction(name: String): Any {
-        return readStaticField(requiredClass(DIALOG_ACTION_CLASS_NAME), name)
+        return readStaticProperty(requiredClass(DIALOG_ACTION_CLASS_NAME), name)
     }
 
     private fun decodeTag(tag: Any): Any? {
@@ -505,35 +403,34 @@ class DialogNMSImpl : DialogNMS() {
         callOptional(tag, "asFloat")?.let { return it }
         callOptional(tag, "asDouble")?.let { return it }
         callOptional(tag, "asCompound")?.let { compound ->
-            val entries = invokeMethod(compound, "entrySet") as? Set<*> ?: return emptyMap<String, Any?>()
+            val entries = compound.invokeMethod<Set<*>>("entrySet") ?: return emptyMap<String, Any?>()
             return entries.associate { entry ->
                 val mapEntry = entry as Map.Entry<*, *>
                 mapEntry.key.toString() to decodeTag(mapEntry.value!!)
             }
         }
         callOptional(tag, "asList")?.let { list ->
-            val size = invokeMethod(list, "size") as? Int ?: 0
+            val size = list.invokeMethod<Int>("size") ?: 0
             return (0 until size).map { index ->
-                decodeTag(invokeMethod(list, "get", Int::class.javaPrimitiveType!!, index)!!)
+                decodeTag(list.invokeMethod<Any?>("get", index)!!)
             }
         }
         return tag.toString()
     }
 
     private fun callOptional(instance: Any, methodName: String): Any? {
-        val result = runCatching { invokeMethod(instance, methodName) as? Optional<*> }.getOrNull() ?: return null
+        val result = runCatching { instance.invokeMethod<Optional<*>>(methodName) }.getOrNull() ?: return null
         return result.orElse(null)
     }
 
     private fun readRecordComponent(instance: Any, preferredName: String, index: Int): Any? {
-        runCatching { findMethod(instance.javaClass, preferredName, emptyArray()).invoke(instance) }.getOrNull()?.let { return it }
-        val getRecordComponents = runCatching { Class::class.java.getMethod("getRecordComponents") }.getOrNull() ?: return null
-        val components = getRecordComponents.invoke(instance.javaClass) as? Array<*> ?: return null
-        val component = components.getOrNull(index) ?: return null
-        val getAccessor = runCatching { component.javaClass.getMethod("getAccessor") }.getOrNull() ?: return null
-        val accessor = getAccessor.invoke(component) as? Method ?: return null
-        accessor.isAccessible = true
-        return accessor.invoke(instance)
+        runCatching { instance.invokeMethod<Any?>(preferredName) }.getOrNull()?.let { return it }
+        runCatching { instance.getProperty<Any?>(preferredName) }.getOrNull()?.let { return it }
+        val field = ReflexHelper.reflexClass(instance.javaClass).structure.fields
+            .filterNot { it.isStatic }
+            .getOrNull(index)
+            ?: return null
+        return runCatching { field.get(instance) }.getOrNull()
     }
 
     private fun dialogKeyClass(): Class<*> {
@@ -557,164 +454,51 @@ class DialogNMSImpl : DialogNMS() {
     }
 
     private fun resolveClearDialogPacketInstance(): Any? {
-        val packetClass = classOrNull(CLIENTBOUND_CLEAR_DIALOG_PACKET_CLASS_NAME) ?: return null
-        packetClass.declaredFields.firstOrNull {
-            Modifier.isStatic(it.modifiers) && packetClass.isAssignableFrom(it.type)
-        }?.let { field ->
-            field.isAccessible = true
-            return field.get(null)
-        }
-        return runCatching { newInstance(packetClass.name, emptyArray()) }.getOrNull()
+        val packetClass = ReflexHelper.classOrNull(CLIENTBOUND_CLEAR_DIALOG_PACKET_CLASS_NAME) ?: return null
+        ReflexHelper.getStaticPropertyByTypeOrNull(packetClass, packetClass)?.let { return it }
+        return ReflexHelper.invokeConstructorOrNull(packetClass)
     }
 
     private fun canCreateDialogKey(): Boolean {
         val keyClass = resolvedDialogKeyClass ?: return false
-        return hasStaticMethod(keyClass, DIALOG_KEY_FACTORY_METHOD_NAMES, arrayOf(String::class.java, String::class.java)) ||
-            hasConstructor(keyClass, arrayOf(String::class.java, String::class.java)) ||
-            hasStaticMethod(keyClass, DIALOG_KEY_PARSER_METHOD_NAMES, arrayOf(String::class.java))
-    }
-
-    private fun hasConstructor(owner: Class<*>, parameterTypes: Array<Class<*>>): Boolean {
-        return runCatching { findConstructor(owner, parameterTypes) }.isSuccess
-    }
-
-    private fun hasStaticMethod(owner: Class<*>, methodNames: List<String>, parameterTypes: Array<Class<*>>): Boolean {
-        return runCatching { findMethod(owner, methodNames, parameterTypes, staticOnly = true) }.isSuccess
+        return ReflexHelper.hasMethod(keyClass, DIALOG_KEY_FACTORY_METHOD_NAMES, staticOnly = true, String::class.java, String::class.java) ||
+            ReflexHelper.hasConstructor(keyClass, String::class.java, String::class.java) ||
+            ReflexHelper.hasMethod(keyClass, DIALOG_KEY_PARSER_METHOD_NAMES, staticOnly = true, String::class.java)
     }
 
     private fun classExists(className: String): Boolean {
-        return classOrNull(className) != null
+        return ReflexHelper.classOrNull(className) != null
     }
 
     private fun requiredClass(className: String): Class<*> {
-        return classOrNull(className) ?: throw ClassNotFoundException(className)
+        return ReflexHelper.requireClass(className)
     }
 
-    private fun resolveFirstClassOrNull(classNames: List<String>): Class<*>? {
-        return classNames.firstNotNullOfOrNull(::classOrNull)
+    private fun readStaticProperty(owner: Class<*>, propertyName: String): Any {
+        return ReflexHelper.getStaticPropertyAliasOrNull(owner, listOf(propertyName))
+            ?: throw NoSuchFieldException("Field $propertyName not found in ${owner.name}")
     }
 
-    private fun classOrNull(className: String): Class<*>? {
-        classCache[className]?.let { return it }
-        return runCatching { Class.forName(className) }.getOrNull()?.also {
-            classCache[className] = it
-        }
+    private fun newInstance(className: String, vararg args: Any?): Any {
+        return requiredClass(className).invokeConstructor(*args)
     }
 
-    private fun readStaticField(owner: Class<*>, fieldName: String): Any {
-        val field = findField(owner, listOf(fieldName), staticOnly = true)
-        return field.get(null)
+    private fun newInstance(owner: Class<*>, vararg args: Any?): Any {
+        return owner.invokeConstructor(*args)
     }
 
-    private fun readStringFieldOrNull(instance: Any, fieldNames: List<String>): String? {
-        val field = runCatching { findField(instance.javaClass, fieldNames) }.getOrNull() ?: return null
-        return field.get(instance) as? String
+    private fun invokeStatic(owner: Class<*>, methodName: String, vararg args: Any?): Any {
+        return owner.invokeMethod<Any?>(methodName, *args, isStatic = true)
+            ?: throw NoSuchMethodException("Method $methodName not found in ${owner.name}")
     }
 
-    private fun newInstance(className: String, parameterTypes: Array<Class<*>>, vararg args: Any?): Any {
-        val constructor = findConstructor(requiredClass(className), parameterTypes)
-        return constructor.newInstance(*args)
-    }
-
-    private fun findConstructor(owner: Class<*>, parameterTypes: Array<Class<*>>): Constructor<*> {
-        val key = ConstructorCacheKey(owner.name, parameterTypes.map(Class<*>::getName))
-        constructorCache[key]?.let { return it }
-        val constructor = owner.getDeclaredConstructor(*parameterTypes)
-        constructor.isAccessible = true
-        constructorCache[key] = constructor
-        return constructor
-    }
-
-    private fun invokeStatic(owner: Class<*>, methodName: String, parameterTypes: Array<Class<*>>, vararg args: Any?): Any {
-        val method = findMethod(owner, methodName, parameterTypes, staticOnly = true)
-        return method.invoke(null, *args)
-    }
-
-    private fun invokeStaticAlias(owner: Class<*>, methodNames: List<String>, parameterTypes: Array<Class<*>>, vararg args: Any?): Any {
-        val method = findMethod(owner, methodNames, parameterTypes, staticOnly = true)
-        return method.invoke(null, *args)
-    }
-
-    private fun invokeStaticAliasOrNull(owner: Class<*>, methodNames: List<String>, parameterTypes: Array<Class<*>>, vararg args: Any?): Any? {
-        val method = runCatching { findMethod(owner, methodNames, parameterTypes, staticOnly = true) }.getOrNull() ?: return null
-        return runCatching { method.invoke(null, *args) }.getOrNull()
-    }
-
-    private fun invokeMethod(instance: Any, methodName: String, vararg parameterTypesAndArgs: Any): Any? {
-        val (types, args) = splitMethodArguments(parameterTypesAndArgs)
-        val method = findMethod(instance.javaClass, methodName, types)
-        return method.invoke(instance, *args)
-    }
-
-    private fun invokeMethodAliasOrNull(instance: Any, methodNames: List<String>, vararg parameterTypesAndArgs: Any): Any? {
-        val (types, args) = splitMethodArguments(parameterTypesAndArgs)
-        val method = runCatching { findMethod(instance.javaClass, methodNames, types) }.getOrNull() ?: return null
-        return runCatching { method.invoke(instance, *args) }.getOrNull()
-    }
-
-    private fun splitMethodArguments(parameterTypesAndArgs: Array<out Any>): Pair<Array<Class<*>>, Array<Any?>> {
-        val types = mutableListOf<Class<*>>()
-        val args = mutableListOf<Any?>()
-        var index = 0
-        while (index < parameterTypesAndArgs.size) {
-            types += parameterTypesAndArgs[index] as Class<*>
-            args += parameterTypesAndArgs[index + 1]
-            index += 2
-        }
-        return types.toTypedArray() to args.toTypedArray()
-    }
-
-    private fun findMethod(owner: Class<*>, methodName: String, parameterTypes: Array<Class<*>>, staticOnly: Boolean = false): Method {
-        return findMethod(owner, listOf(methodName), parameterTypes, staticOnly)
-    }
-
-    private fun findMethod(owner: Class<*>, methodNames: List<String>, parameterTypes: Array<Class<*>>, staticOnly: Boolean = false): Method {
-        val key = MethodCacheKey(owner.name, methodNames, parameterTypes.map(Class<*>::getName), staticOnly)
-        methodCache[key]?.let { return it }
-        val method = (owner.methods.asSequence() + owner.declaredMethods.asSequence())
-            .firstOrNull {
-                it.name in methodNames &&
-                    (!staticOnly || Modifier.isStatic(it.modifiers)) &&
-                    matches(it.parameterTypes, parameterTypes)
-            }
+    private fun invokeStaticAlias(owner: Class<*>, methodNames: List<String>, vararg args: Any?): Any {
+        return invokeStaticAliasOrNull(owner, methodNames, *args)
             ?: throw NoSuchMethodException("Method ${methodNames.joinToString("/")} not found in ${owner.name}")
-        method.isAccessible = true
-        methodCache[key] = method
-        return method
     }
 
-    private fun findField(owner: Class<*>, fieldNames: List<String>, staticOnly: Boolean = false): Field {
-        val key = FieldCacheKey(owner.name, fieldNames, staticOnly)
-        fieldCache[key]?.let { return it }
-        val field = (owner.fields.asSequence() + owner.declaredFields.asSequence())
-            .firstOrNull {
-                it.name in fieldNames && (!staticOnly || Modifier.isStatic(it.modifiers))
-            }
-            ?: throw NoSuchFieldException("Field ${fieldNames.joinToString("/")} not found in ${owner.name}")
-        field.isAccessible = true
-        fieldCache[key] = field
-        return field
-    }
-
-    private fun matches(actual: Array<Class<*>>, expected: Array<Class<*>>): Boolean {
-        if (actual.size != expected.size) {
-            return false
-        }
-        return actual.indices.all { index -> wrap(actual[index]).isAssignableFrom(wrap(expected[index])) }
-    }
-
-    private fun wrap(type: Class<*>): Class<*> {
-        return when (type) {
-            java.lang.Boolean.TYPE -> java.lang.Boolean::class.java
-            java.lang.Byte.TYPE -> java.lang.Byte::class.java
-            java.lang.Short.TYPE -> java.lang.Short::class.java
-            java.lang.Integer.TYPE -> java.lang.Integer::class.java
-            java.lang.Long.TYPE -> java.lang.Long::class.java
-            java.lang.Float.TYPE -> java.lang.Float::class.java
-            java.lang.Double.TYPE -> java.lang.Double::class.java
-            java.lang.Character.TYPE -> java.lang.Character::class.java
-            else -> type
-        }
+    private fun invokeStaticAliasOrNull(owner: Class<*>, methodNames: List<String>, vararg args: Any?): Any? {
+        return ReflexHelper.invokeStaticMethodAliasOrNull(owner, methodNames, *args)
     }
 
     private fun sanitizeId(value: String): String {
@@ -722,29 +506,11 @@ class DialogNMSImpl : DialogNMS() {
     }
 
     private fun craftBukkitClass(path: String): Class<*> {
-        return runCatching { Class.forName("org.bukkit.craftbukkit.$path") }.getOrElse {
-            val base = Bukkit.getServer()::class.java.`package`.name
-            Class.forName("$base.$path")
-        }
+        val versioned = Bukkit.getServer()::class.java.`package`.name
+        return ReflexHelper.classOrNull("org.bukkit.craftbukkit.$path")
+            ?: ReflexHelper.classOrNull("$versioned.$path")
+            ?: throw ClassNotFoundException("Unable to resolve CraftBukkit class: $path")
     }
-
-    private data class ConstructorCacheKey(
-        val ownerClassName: String,
-        val parameterTypeNames: List<String>
-    )
-
-    private data class MethodCacheKey(
-        val ownerClassName: String,
-        val methodNames: List<String>,
-        val parameterTypeNames: List<String>,
-        val staticOnly: Boolean
-    )
-
-    private data class FieldCacheKey(
-        val ownerClassName: String,
-        val fieldNames: List<String>,
-        val staticOnly: Boolean
-    )
 
     companion object {
         private const val ACTION_NAMESPACE = "trmenu"

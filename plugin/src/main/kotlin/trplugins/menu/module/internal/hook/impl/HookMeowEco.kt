@@ -4,7 +4,7 @@ import org.bukkit.OfflinePlayer
 import org.bukkit.Bukkit
 import taboolib.library.reflex.Reflex.Companion.invokeMethod
 import trplugins.menu.module.internal.hook.HookAbstract
-import java.util.UUID
+import trplugins.menu.util.ReflexHelper
 
 /**
  * @author Arasple
@@ -17,7 +17,7 @@ class HookMeowEco : HookAbstract() {
     private fun getApiInstance(): Any? {
         if (!isHooked) return null
         return runCatching {
-            val apiClass = Class.forName(apiClassName)
+            val apiClass = ReflexHelper.classOrNull(apiClassName) ?: return null
             val registration = Bukkit.getServicesManager().invokeMethod<Any>("getRegistration", apiClass) ?: return null
             registration.invokeMethod<Any>("getProvider")
         }.getOrNull()

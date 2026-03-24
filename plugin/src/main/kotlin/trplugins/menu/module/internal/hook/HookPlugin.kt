@@ -3,6 +3,7 @@ package trplugins.menu.module.internal.hook
 import taboolib.common.LifeCycle
 import taboolib.common.platform.SkipTo
 import taboolib.common.platform.function.console
+import taboolib.library.reflex.Reflex.Companion.invokeConstructor
 import taboolib.module.lang.sendLang
 import trplugins.menu.module.internal.hook.impl.*
 import trplugins.menu.util.ClassUtils
@@ -24,7 +25,7 @@ object HookPlugin {
     private val registry by lazy {
         mutableListOf<HookAbstract>().also {
             ClassUtils.subClasses(HookAbstract::class.java) { hook ->
-                it.add(hook.getConstructor().newInstance())
+                it.add(hook.invokeConstructor())
             }
         }.toTypedArray()
     }

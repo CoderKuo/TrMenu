@@ -16,6 +16,7 @@ import taboolib.module.nms.MinecraftVersion
 import taboolib.platform.util.BukkitSkull
 import taboolib.common.platform.function.submit
 import trplugins.menu.module.internal.hook.HookPlugin
+import trplugins.menu.util.ReflexHelper
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.URL
@@ -43,7 +44,7 @@ object Heads {
     private val CACHED_SKULLS = mutableMapOf<String, ItemStack>()
     private val VALUE = if (MinecraftVersion.major >= 1.20) "value" else "getValue"
     private val NAME = if (MinecraftVersion.major >= 1.20) "name" else "getName"
-    private val USE_PROFILE = runCatching { OfflinePlayer::class.java.getDeclaredMethod("getPlayerProfile") }.isSuccess
+    private val USE_PROFILE = ReflexHelper.hasMethod(OfflinePlayer::class.java, listOf("getPlayerProfile"))
 
     // 异步材质缓存: 玩家名 -> 材质URL
     private val textureCache = ConcurrentHashMap<String, String>()

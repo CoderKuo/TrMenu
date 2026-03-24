@@ -1,24 +1,26 @@
 package trplugins.menu.util
 
 import taboolib.common.io.runningClasses
+import taboolib.library.reflex.Reflex.Companion.invokeMethod
 import java.util.function.Consumer
 
 object ClassUtils {
     @JvmStatic
     val staticClass: Class<*> by lazy {
-        if (System.getProperty("java.version").contains("1.8."))
-            Class.forName("jdk.internal.dynalink.beans.StaticClass")
-        else
-            Class.forName("jdk.dynalink.beans.StaticClass")
+        val className = if (System.getProperty("java.version").contains("1.8.")) {
+            "jdk.internal.dynalink.beans.StaticClass"
+        } else {
+            "jdk.dynalink.beans.StaticClass"
+        }
+        ReflexHelper.requireClass(className)
     }
 
     @JvmStatic
     fun staticClass(className: String): Any? {
-        return try {
-            staticClass.getMethod("forClass", Class::class.java).invoke(null, Class.forName(className))
-        } catch (e: Exception) {
-            null
-        }
+        val owner = ReflexHelper.classOrNull(className) ?: return null
+        return runCatching {
+            staticClass.invokeMethod<Any?>("forClass", owner, isStatic = true)
+        }.getOrNull()
     }
 
     @JvmStatic
