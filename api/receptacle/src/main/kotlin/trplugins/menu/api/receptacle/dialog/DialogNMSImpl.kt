@@ -107,7 +107,7 @@ class DialogNMSImpl : DialogNMS() {
     private fun buildDialog(payload: DialogPayload): Any {
         val common = buildCommonDialogData(payload)
         val actions = if (payload.actions.isEmpty() && payload.exitAction == null) {
-            listOf(DialogActionPayload("__default_close__", "Close", 120, true, null, false))
+            listOf(DialogActionPayload("__default_close__", "Close", 120, false))
         } else {
             payload.actions
         }
@@ -177,7 +177,7 @@ class DialogNMSImpl : DialogNMS() {
             optionalComponent(payload.externalTitle),
             effectiveAllowEscClose,
             false,
-            dialogAction("WAIT_FOR_RESPONSE"),
+            dialogAction("NONE"),
             body,
             inputs
         )

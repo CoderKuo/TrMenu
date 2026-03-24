@@ -45,14 +45,14 @@ Dialog:
         - Id: 'confirm_delete'
           Label: '&c确认删除'
           Width: 160
-          Close-On-Click: true
           Execute:
             - 'set-meta: confirm_reason %trmenu_dialog_input_delete_reason%'
             - 'set-meta: confirm_targets %trmenu_dialog_option_cleanup_targets%'
             - 'tell: &c已确认删除, 范围: %trmenu_dialog_option_cleanup_targets%'
+            - 'close'
         - Id: 'cancel_delete'
           Label: '&a取消操作'
           Width: 160
-          Close-On-Click: true
           Execute:
             - 'tell: &a已取消删除请求'
+            - 'close'

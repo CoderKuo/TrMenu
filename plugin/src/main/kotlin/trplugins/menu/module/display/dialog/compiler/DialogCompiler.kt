@@ -171,7 +171,6 @@ object DialogCompiler {
                         node.id,
                         node.widget.label ?: node.id,
                         width,
-                        node.widget.closeOnClick,
                         node.widget.nextPage,
                         node.widget.exitAction,
                         Reactions.ofReaction(TrMenu.actionHandle, node.widget.actions)
@@ -220,8 +219,6 @@ object DialogCompiler {
             id = spec.id,
             label = session.parse(spec.label),
             width = spec.width,
-            closesDialog = spec.closesDialog,
-            nextPage = spec.nextPage,
             exitAction = spec.exitAction
         )
     }

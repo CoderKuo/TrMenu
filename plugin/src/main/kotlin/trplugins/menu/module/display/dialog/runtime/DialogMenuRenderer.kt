@@ -85,10 +85,11 @@ object DialogMenuRenderer {
             page(session, action.nextPage)
             return
         }
-        if (action.closesDialog) {
-            close(session)
+        // If the action execution already closed the dialog (via 'close' action), don't refresh
+        if (session.dialogState == null) {
             return
         }
+        // Otherwise refresh to replace the "waiting for response" screen
         refresh(session)
     }
 

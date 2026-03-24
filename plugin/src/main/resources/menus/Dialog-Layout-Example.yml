@@ -20,9 +20,9 @@ Dialog:
         Id: 'exit_dialog'
         Label: '&c关闭面板'
         Width: 120
-        Close-On-Click: true
         Execute:
           - 'tell: &7你已关闭 MULTI_ACTION 示例面板'
+          - 'close'
       Layout:
         Row-Gap: 1
         Sections:
@@ -113,10 +113,10 @@ Dialog:
           col-start: 1
           col-span: 6
           label: '&a立即前往'
-          close-on-click: true
           execute:
             - 'tell: &a正在连接 %trmenu_dialog_option_target%'
             - 'tell: &7附加模式: %trmenu_dialog_option_server_modes%'
+            - 'close'
         queue:
           kind: action
           anchor: footer
@@ -124,7 +124,6 @@ Dialog:
           col-start: 7
           col-span: 6
           label: '&e加入队列'
-          close-on-click: false
           execute:
             - 'tell: &e已加入 %trmenu_dialog_option_target% 队列'
             - 'tell: &7附加模式: %trmenu_dialog_option_server_modes%'

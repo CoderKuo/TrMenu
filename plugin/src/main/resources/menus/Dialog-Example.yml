@@ -60,8 +60,8 @@ Dialog:
         - Id: 'submit_notice'
           Label: '&a提交选择'
           Width: 180
-          Close-On-Click: true
           Execute:
             - 'set-meta: notice_note %trmenu_dialog_input_signup_note%'
             - 'set-meta: notice_packs %trmenu_dialog_option_reward_packs%'
             - 'tell: &aNOTICE 示例已提交, 奖励包: %trmenu_dialog_option_reward_packs%'
+            - 'close'
