@@ -24,8 +24,30 @@ import trplugins.menu.api.receptacle.ReceptacleClickType
 import trplugins.menu.api.suffixes
 import trplugins.menu.module.conf.prop.SerializeError
 import trplugins.menu.module.conf.prop.SerialzeResult
+import trplugins.menu.TrMenu
 import trplugins.menu.module.display.Menu
+import trplugins.menu.module.display.MenuRenderType
 import trplugins.menu.module.display.MenuSettings
+import trplugins.menu.module.display.dialog.model.DialogActionSpec
+import trplugins.menu.module.display.dialog.model.DialogBooleanSpec
+import trplugins.menu.module.display.dialog.model.DialogCompilerSpec
+import trplugins.menu.module.display.dialog.model.DialogCompilerStrategy
+import trplugins.menu.module.display.dialog.model.DialogInputSpec
+import trplugins.menu.module.display.dialog.model.DialogItemDisplaySpec
+import trplugins.menu.module.display.dialog.model.DialogItemSpec
+import trplugins.menu.module.display.dialog.model.DialogLayoutSpec
+import trplugins.menu.module.display.dialog.model.DialogMenuSpec
+import trplugins.menu.module.display.dialog.model.DialogMultiOptionSpec
+import trplugins.menu.module.display.dialog.model.DialogNumberRangeSpec
+import trplugins.menu.module.display.dialog.model.DialogOptionSpec
+import trplugins.menu.module.display.dialog.model.DialogPageSpec
+import trplugins.menu.module.display.dialog.model.DialogPlainMessageSpec
+import trplugins.menu.module.display.dialog.model.DialogScreenType
+import trplugins.menu.module.display.dialog.model.DialogSectionSpec
+import trplugins.menu.module.display.dialog.model.DialogSingleOptionSpec
+import trplugins.menu.module.display.dialog.model.DialogUnsupportedPolicy
+import trplugins.menu.module.display.dialog.model.DialogWidgetKind
+import trplugins.menu.module.display.dialog.model.DialogWidgetSpec
 import trplugins.menu.module.display.icon.Icon
 import trplugins.menu.module.display.icon.IconProperty
 import trplugins.menu.module.display.icon.Position
@@ -84,6 +106,8 @@ object MenuSerializer : ISerializer {
             else -> emptyMap()
         }
 
+        val renderType = MenuRenderType.from(Property.RENDER_TYPE.ofString(conf, MenuRenderType.WINDOW.name))
+
         // 读取菜单设置
         val settings = serializeSetting(conf, languages)
         if (!settings.succeed()) {
@@ -98,11 +122,22 @@ object MenuSerializer : ISerializer {
             result.submitErrors(layout).also { return result }
         }
         // 读取菜单图标
-        val icons = serializeIcons(conf, languages, layout.asLayout())
+        val icons = if (renderType == MenuRenderType.DIALOG) {
+            SerialzeResult(SerialzeResult.Type.ICON).also { it.result = emptyList<Icon>() }
+        } else {
+            serializeIcons(conf, languages, layout.asLayout())
+        }
         if (!icons.succeed()) {
             result.submitErrors(icons).also {
                 return result
             }
+        }
+
+        val dialog = if (renderType == MenuRenderType.DIALOG) {
+            serializeDialog(conf)
+        } else null
+        if (dialog != null && !dialog.succeed()) {
+            result.submitErrors(dialog).also { return result }
         }
 
         // 读取菜单语言
@@ -123,6 +158,8 @@ object MenuSerializer : ISerializer {
             settings.result as MenuSettings,
             layout.result as MenuLayout,
             icons.asIcons(),
+            renderType,
+            dialog?.result as? DialogMenuSpec,
             conf,
             if (languages.isNotEmpty()) langKey else null,
             lang
@@ -429,6 +466,199 @@ object MenuSerializer : ISerializer {
 
             IconProperty(priority, condition, item, clickActions)
         }
+
+    private fun serializeDialog(conf: Configuration): SerialzeResult {
+        val result = SerialzeResult(SerialzeResult.Type.MENU)
+        val dialogSection = Property.DIALOG.ofSection(conf)
+        if (dialogSection == null) {
+            result.submitError(RuntimeException("Dialog section is required when Render-Type is DIALOG."))
+            result.state = SerialzeResult.State.FAILED
+            return result
+        }
+        val compilerSection = Property.DIALOG_COMPILER.ofSection(dialogSection)
+        val compiler = DialogCompilerSpec(
+            strategy = DialogCompilerStrategy.from(Property.DIALOG_COMPILER_STRATEGY.ofString(compilerSection, "AUTO")),
+            unsupportedPolicy = DialogUnsupportedPolicy.from(Property.DIALOG_COMPILER_UNSUPPORTED_POLICY.ofString(compilerSection, "FALLBACK_MENU")),
+            gridColumns = Property.DIALOG_COMPILER_GRID_COLUMNS.ofInt(compilerSection, 12),
+            contentMaxWidth = Property.DIALOG_COMPILER_CONTENT_MAX_WIDTH.ofInt(compilerSection, 360),
+            mixinAssist = Property.DIALOG_COMPILER_MIXIN_ASSIST.ofBoolean(compilerSection, false)
+        )
+        val pages = dialogSection.getMapList(Property.DIALOG_PAGES.default).mapIndexed { index, pageMap ->
+            serializeDialogPage(index, Property.asSection(pageMap) ?: Configuration.empty())
+        }
+        if (pages.isEmpty()) {
+            result.submitError(RuntimeException("Dialog pages are required when Render-Type is DIALOG."))
+            result.state = SerialzeResult.State.FAILED
+            return result
+        }
+        result.result = DialogMenuSpec(
+            minVersion = parseDialogVersion(Property.DIALOG_MIN_VERSION.ofString(dialogSection, "1.21.6")),
+            fallbackMenu = Property.DIALOG_FALLBACK_MENU.ofString(dialogSection),
+            allowEscClose = Property.DIALOG_ALLOW_ESC_CLOSE.ofBoolean(dialogSection, true),
+            externalTitle = Property.DIALOG_EXTERNAL_TITLE.ofString(dialogSection),
+            compiler = compiler,
+            pages = pages
+        )
+        return result
+    }
+
+    private fun serializeDialogPage(index: Int, section: Configuration): DialogPageSpec {
+        val layout = serializeDialogLayout(section)
+        val actions = if (layout != null) emptyList() else section.getMapList(Property.DIALOG_PAGE_ACTIONS.default).mapIndexed { actionIndex, actionMap ->
+            serializeDialogAction(actionIndex, Property.asSection(actionMap) ?: Configuration.empty())
+        }
+        val body = if (layout != null) emptyList() else section.getMapList(Property.DIALOG_PAGE_BODY.default).mapIndexedNotNull { bodyIndex, bodyMap ->
+            serializeDialogBody(bodyIndex, Property.asSection(bodyMap) ?: Configuration.empty())
+        }
+        return DialogPageSpec(
+            id = Property.DIALOG_PAGE_ID.ofString(section, "page_$index"),
+            type = DialogScreenType.from(Property.DIALOG_PAGE_TYPE.ofString(section, "NOTICE")),
+            title = Property.DIALOG_PAGE_TITLE.ofString(section),
+            body = body,
+            actions = actions,
+            layoutSpec = layout,
+            onClose = Reactions.ofReaction(TrMenu.actionHandle, section["On-Close"])
+        )
+    }
+
+    private fun serializeDialogBody(index: Int, section: Configuration): trplugins.menu.module.display.dialog.model.DialogBodySpec? {
+        val renderer = section.getString("Renderer")?.lowercase() ?: section.getString("Type")?.lowercase() ?: return null
+        val id = section.getString("Id") ?: "body_$index"
+        val width = section.getInt("Width").takeIf { it > 0 }
+        return when (renderer) {
+            "plain_message", "text", "message" -> DialogPlainMessageSpec(id, section.getStringList("Text"), width)
+            "item" -> DialogItemSpec(id, serializeDialogItemDisplay(Property.asSection(section["Display"]) ?: Configuration.empty()), width)
+            "input" -> DialogInputSpec(
+                id = id,
+                label = section.getString("Label") ?: id,
+                placeholder = section.getString("Placeholder"),
+                defaultValue = section.getString("Default-Value"),
+                maxLength = section.getInt("Max-Length").takeIf { it > 0 },
+                width = width
+            )
+            "boolean", "toggle" -> DialogBooleanSpec(
+                id = id,
+                label = section.getString("Label") ?: id,
+                initial = section.getBoolean("Initial", false),
+                width = width
+            )
+            "single_option", "single-option", "select" -> DialogSingleOptionSpec(
+                id = id,
+                label = section.getString("Label") ?: id,
+                options = serializeDialogOptions(section),
+                defaultValue = section.getString("Default-Value"),
+                width = width
+            )
+            "multi_option", "multi-option" -> DialogMultiOptionSpec(
+                id = id,
+                label = section.getString("Label") ?: id,
+                options = serializeDialogOptions(section),
+                defaultValue = section.getStringList("Default-Value"),
+                width = width
+            )
+            "number_range", "number-range", "range" -> DialogNumberRangeSpec(
+                id = id,
+                label = section.getString("Label") ?: id,
+                min = section.getDouble("Min"),
+                max = section.getDouble("Max"),
+                step = section.getDouble("Step").takeIf { it > 0 } ?: 1.0,
+                defaultValue = section.getString("Default-Value")?.toDoubleOrNull(),
+                width = width
+            )
+            else -> null
+        }
+    }
+
+    private fun serializeDialogAction(index: Int, section: Configuration): DialogActionSpec {
+        return DialogActionSpec(
+            id = section.getString("Id") ?: "action_$index",
+            label = section.getString("Label") ?: "Action-$index",
+            width = section.getInt("Width").takeIf { it > 0 },
+            closesDialog = section.getBoolean("Close-On-Click", true),
+            nextPage = section.getString("Next-Page")?.toIntOrNull() ?: section.getInt("Next-Page").takeIf { section.contains("Next-Page") },
+            actions = Reactions.ofReaction(TrMenu.actionHandle, section["Execute"] ?: section["Actions"]),
+            denyActions = section["Deny"]?.let { Reactions.ofReaction(TrMenu.actionHandle, it) }
+        )
+    }
+
+    private fun serializeDialogLayout(section: Configuration): DialogLayoutSpec? {
+        val widgetsSection = Property.DIALOG_WIDGETS.ofSection(section) ?: return null
+        val layoutSection = Property.DIALOG_LAYOUT.ofSection(section)
+        val sectionsSection = Property.DIALOG_LAYOUT_SECTIONS.ofSection(layoutSection)
+        val sections = sectionsSection
+            ?.getKeys(false)
+            ?.associateWith { key ->
+                val sub = sectionsSection.getConfigurationSection(key)
+                DialogSectionSpec(key, sub?.getInt("row", 0) ?: 0)
+            }
+            ?: emptyMap()
+        val widgets = widgetsSection.getKeys(false).map { key ->
+            val widget = widgetsSection.getConfigurationSection(key) ?: Configuration.empty()
+            DialogWidgetSpec(
+                id = key,
+                kind = DialogWidgetKind.from(Property.DIALOG_WIDGET_KIND.ofString(widget, "TEXT")),
+                anchor = Property.DIALOG_WIDGET_ANCHOR.ofString(widget, "content"),
+                row = Property.DIALOG_WIDGET_ROW.ofInt(widget, 1),
+                colStart = Property.DIALOG_WIDGET_COL_START.ofInt(widget, 1),
+                colSpan = Property.DIALOG_WIDGET_COL_SPAN.ofInt(widget, 12),
+                order = Property.DIALOG_WIDGET_ORDER.ofInt(widget, 0),
+                width = widget.getInt("width").takeIf { it > 0 },
+                text = widget.getStringList("text"),
+                label = widget.getString("label"),
+                placeholder = widget.getString("placeholder"),
+                display = widget["display"]?.let { serializeDialogItemDisplay(Property.asSection(it) ?: Configuration.empty()) },
+                options = serializeDialogOptions(widget),
+                initialBoolean = widget.getBoolean("initial", false),
+                defaultValue = widget.getString("default-value"),
+                defaultValues = widget.getStringList("default-values").ifEmpty { widget.getStringList("default-value") },
+                min = widget.getString("min")?.toDoubleOrNull(),
+                max = widget.getString("max")?.toDoubleOrNull(),
+                step = widget.getString("step")?.toDoubleOrNull() ?: 1.0,
+                maxLength = widget.getInt("max-length").takeIf { it > 0 },
+                closeOnClick = widget.getBoolean("close-on-click", true),
+                nextPage = widget.getString("next-page")?.toIntOrNull(),
+                actions = Property.asList(widget["execute"] ?: widget["actions"]),
+                condition = widget.getString("condition") ?: ""
+            )
+        }
+        return DialogLayoutSpec(
+            rowGap = Property.DIALOG_LAYOUT_ROW_GAP.ofInt(layoutSection, 1),
+            sections = sections,
+            widgets = widgets
+        )
+    }
+
+    private fun serializeDialogOptions(section: ConfigurationSection): List<DialogOptionSpec> {
+        return section.getMapList("Options").mapIndexed { index, optionMap ->
+            val option = Property.asSection(optionMap) ?: Configuration.empty()
+            DialogOptionSpec(
+                id = option.getString("Id") ?: "option_$index",
+                title = option.getString("Title") ?: option.getString("Name") ?: "Option-$index",
+                description = option.getString("Description")
+            )
+        }
+    }
+
+    private fun serializeDialogItemDisplay(section: Configuration): DialogItemDisplaySpec {
+        return DialogItemDisplaySpec(
+            material = section.getString("material") ?: section.getString("Material") ?: "STONE",
+            name = section.getString("name") ?: section.getString("Name"),
+            lore = section.getStringList("lore").ifEmpty { section.getStringList("Lore") },
+            amount = (section.getString("amount") ?: section.getString("Amount"))?.toIntOrNull() ?: 1
+        )
+    }
+
+    private fun parseDialogVersion(version: String?): Int {
+        val value = version?.trim().orEmpty()
+        if (value.matches(Regex("\\d+"))) {
+            return value.toInt()
+        }
+        val split = value.split('.')
+        val major = split.getOrNull(0)?.toIntOrNull() ?: 1
+        val minor = split.getOrNull(1)?.toIntOrNull() ?: 0
+        val patch = split.getOrNull(2)?.toIntOrNull() ?: 0
+        return major * 10000 + minor * 100 + patch
+    }
 
     val line: (List<String>) -> List<String> =
         { origin -> mutableListOf<String>().also { list -> origin.forEach { list.addAll(it.split("\n")) } } }

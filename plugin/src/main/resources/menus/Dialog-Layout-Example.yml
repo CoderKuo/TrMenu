@@ -1,0 +1,102 @@
+Title: '&0服务器确认面板'
+Render-Type: DIALOG
+
+Dialog:
+  Min-Version: '1.21.6'
+  Fallback-Menu: 'Example'
+  Allow-Esc-Close: true
+  External-Title: '&8自定义 Dialog'
+  Compiler:
+    Strategy: AUTO
+    Unsupported-Policy: FALLBACK_MENU
+    Grid-Columns: 12
+    Content-Max-Width: 360
+    Mixin-Assist: false
+  Pages:
+    - Id: 'server_select'
+      Type: 'notice'
+      Title: '&0服务器确认面板'
+      Layout:
+        Row-Gap: 1
+        Sections:
+          header:
+            row: 1
+          content:
+            row: 2
+          footer:
+            row: 6
+      Widgets:
+        logo:
+          kind: item
+          anchor: header
+          row: 1
+          col-start: 1
+          col-span: 3
+          display:
+            material: NETHER_STAR
+            name: '&e服务器入口'
+            lore:
+              - '&7欢迎使用 Dialog UI'
+        intro:
+          kind: text
+          anchor: header
+          row: 1
+          col-start: 4
+          col-span: 9
+          text:
+            - '&7请选择你要前往的服务器分区。'
+            - '&7如果选择生存服，将自动记录当前线路。'
+        target:
+          kind: single_option
+          anchor: content
+          row: 1
+          col-start: 1
+          col-span: 12
+          label: '&7目标分区'
+          options:
+            - id: survival
+              title: '&a生存服'
+              description: '&7主线生存玩法'
+            - id: skyblock
+              title: '&b空岛服'
+              description: '&7独立空岛发展'
+            - id: pvp
+              title: '&c竞技服'
+              description: '&7即时战斗玩法'
+        note:
+          kind: input
+          anchor: content
+          row: 2
+          col-start: 1
+          col-span: 12
+          label: '&7备注'
+          placeholder: '&8输入你本次进入的目的'
+          max-length: 24
+        agree:
+          kind: boolean
+          anchor: content
+          row: 3
+          col-start: 1
+          col-span: 12
+          label: '&7我已阅读传送说明'
+          initial: false
+        confirm:
+          kind: action
+          anchor: footer
+          row: 1
+          col-start: 1
+          col-span: 7
+          label: '&a确认前往'
+          close-on-click: true
+          execute:
+            - 'tell: &a正在为你连接到 %trmenu_dialog_option_target%'
+        cancel:
+          kind: action
+          anchor: footer
+          row: 1
+          col-start: 8
+          col-span: 5
+          label: '&c取消'
+          close-on-click: true
+          execute:
+            - 'close'

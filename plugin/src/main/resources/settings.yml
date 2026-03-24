@@ -11,6 +11,11 @@ Options:
     Bedrock: false
   Packet-Inventory:
     Create-Id: false
+  Dialogs:
+    Enable: true
+    Min-Version: '1.21.6'
+    Debug: false
+    Fallback-On-Error: true
   # 代理类型: BUNGEE / VELOCITY / AUTO
   # AUTO 模式下同时注册 BungeeCord 和 bungeecord:main 两个 channel
   Proxy: AUTO

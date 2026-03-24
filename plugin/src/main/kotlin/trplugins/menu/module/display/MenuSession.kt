@@ -10,6 +10,8 @@ import taboolib.module.lang.Language
 import taboolib.platform.compat.replacePlaceholder
 import trplugins.menu.api.event.MenuCloseEvent
 import trplugins.menu.api.receptacle.vanilla.window.WindowReceptacle
+import trplugins.menu.module.display.dialog.model.DialogRuntimeState
+import trplugins.menu.module.display.dialog.runtime.DialogMenuRenderer
 import trplugins.menu.module.display.icon.Icon
 import trplugins.menu.module.display.icon.IconProperty
 import trplugins.menu.module.display.layout.Layout
@@ -28,7 +30,9 @@ class MenuSession(
     var page: Int,
     arguments: Array<String>,
     var agent: Player = viewer,
-    var receptacle: WindowReceptacle? = null
+    var receptacle: WindowReceptacle? = null,
+    var renderType: MenuRenderType? = null,
+    var dialogState: DialogRuntimeState? = null
 ) {
 
     /**
@@ -218,6 +222,8 @@ class MenuSession(
         page = -1
         agent = viewer
         receptacle = null
+        renderType = null
+        dialogState = null
     }
 
     fun shutTemps() {
@@ -235,7 +241,11 @@ class MenuSession(
      */
     fun close(closePacket: Boolean, updateInventory: Boolean) {
         MenuCloseEvent(this).call()
-        receptacle?.close(closePacket)
+        if (renderType == MenuRenderType.DIALOG) {
+            DialogMenuRenderer.close(this, closePacket)
+        } else {
+            receptacle?.close(closePacket)
+        }
         if (updateInventory) viewer.updateInventory()
     }
 

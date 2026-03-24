@@ -31,6 +31,8 @@ object Loader {
                 "Example.yml",
                 "Demo-Buttons.yml",
                 "Profile.yml",
+                "Dialog-Example.yml",
+                "Dialog-Layout-Example.yml",
                 "shop-example/Shop-Categories.yml",
                 "shop-example/categories/Shop-Ores.yml",
                 "shop-example/handler/Shop-Handler-Purchase.yml",

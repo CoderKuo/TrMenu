@@ -54,6 +54,41 @@ enum class Property(val default: String, val regex: Regex) {
     OPTIONS("Options", "(option|setting)s?"),
 
     /**
+     * 菜单渲染类型
+     */
+    RENDER_TYPE("Render-Type", "render-?types?"),
+
+    /**
+     * Dialogs 根节点
+     */
+    DIALOG("Dialog", "dialogs?"),
+
+    /**
+     * Dialogs 最低版本
+     */
+    DIALOG_MIN_VERSION("Min-Version", "min-?versions?"),
+
+    /**
+     * Dialogs 回退菜单
+     */
+    DIALOG_FALLBACK_MENU("Fallback-Menu", "fallback-?menus?"),
+
+    /**
+     * Dialogs 是否允许 ESC 关闭
+     */
+    DIALOG_ALLOW_ESC_CLOSE("Allow-Esc-Close", "allow-?esc-?closes?"),
+
+    /**
+     * Dialogs 外部标题
+     */
+    DIALOG_EXTERNAL_TITLE("External-Title", "external-?titles?"),
+
+    /**
+     * Dialogs 页列表
+     */
+    DIALOG_PAGES("Pages", "pages?"),
+
+    /**
      * 菜单选项 - 是否启用传递参数
      */
     OPTION_ENABLE_ARGUMENTS("Arguments", "(transfer)?-?arg(ument)?s?"),
@@ -162,6 +197,111 @@ enum class Property(val default: String, val regex: Regex) {
      * (拒绝) 反馈动作
      */
     DENY_ACTIONS("deny-actions", "deny(-)?(list|action|click|execute|cmd)?s?"),
+
+    /**
+     * Dialogs 页 ID
+     */
+    DIALOG_PAGE_ID("Id", "ids?"),
+
+    /**
+     * Dialogs 页类型
+     */
+    DIALOG_PAGE_TYPE("Type", "types?"),
+
+    /**
+     * Dialogs 页标题
+     */
+    DIALOG_PAGE_TITLE("Title", "titles?"),
+
+    /**
+     * Dialogs 页正文
+     */
+    DIALOG_PAGE_BODY("Body", "bod(y|ies)"),
+
+    /**
+     * Dialogs 页动作
+     */
+    DIALOG_PAGE_ACTIONS("Actions", "actions?"),
+
+    /**
+     * Dialogs 编译器
+     */
+    DIALOG_COMPILER("Compiler", "compilers?"),
+
+    /**
+     * Dialogs 编译策略
+     */
+    DIALOG_COMPILER_STRATEGY("Strategy", "strateg(y|ies)"),
+
+    /**
+     * Dialogs 不支持策略
+     */
+    DIALOG_COMPILER_UNSUPPORTED_POLICY("Unsupported-Policy", "unsupported-?polic(y|ies)"),
+
+    /**
+     * Dialogs 网格列数
+     */
+    DIALOG_COMPILER_GRID_COLUMNS("Grid-Columns", "grid-?columns?"),
+
+    /**
+     * Dialogs 内容最大宽度
+     */
+    DIALOG_COMPILER_CONTENT_MAX_WIDTH("Content-Max-Width", "content-?max-?width"),
+
+    /**
+     * Dialogs Mixin Assist
+     */
+    DIALOG_COMPILER_MIXIN_ASSIST("Mixin-Assist", "mixin-?assist"),
+
+    /**
+     * Dialogs 布局
+     */
+    DIALOG_LAYOUT("Layout", "layouts?"),
+
+    /**
+     * Dialogs 布局行距
+     */
+    DIALOG_LAYOUT_ROW_GAP("Row-Gap", "row-?gaps?"),
+
+    /**
+     * Dialogs 布局分区
+     */
+    DIALOG_LAYOUT_SECTIONS("Sections", "sections?"),
+
+    /**
+     * Dialogs Widgets
+     */
+    DIALOG_WIDGETS("Widgets", "widgets?"),
+
+    /**
+     * Dialogs Widget 种类
+     */
+    DIALOG_WIDGET_KIND("kind", "kinds?"),
+
+    /**
+     * Dialogs Widget 锚点
+     */
+    DIALOG_WIDGET_ANCHOR("anchor", "anchors?"),
+
+    /**
+     * Dialogs Widget 行号
+     */
+    DIALOG_WIDGET_ROW("row", "rows?"),
+
+    /**
+     * Dialogs Widget 起始列
+     */
+    DIALOG_WIDGET_COL_START("col-start", "col-?starts?"),
+
+    /**
+     * Dialogs Widget 跨列
+     */
+    DIALOG_WIDGET_COL_SPAN("col-span", "col-?spans?"),
+
+    /**
+     * Dialogs Widget 顺序
+     */
+    DIALOG_WIDGET_ORDER("order", "orders?"),
 
     /**
      * 菜单图标

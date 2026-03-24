@@ -1,0 +1,68 @@
+Title: '&0确认进入竞技场'
+Render-Type: DIALOG
+
+Options:
+  Arguments: true
+  Default-Layout: 0
+  Min-Click-Delay: 200
+
+Events:
+  Open:
+    - 'sound: BLOCK_NOTE_BLOCK_PLING-1-2'
+  Close:
+    - 'sound: BLOCK_CHEST_CLOSE-1-0'
+
+Dialog:
+  Min-Version: '1.21.6'
+  Fallback-Menu: 'Example'
+  Allow-Esc-Close: true
+  External-Title: '&8竞技场确认'
+
+  Pages:
+    - Id: 'confirm'
+      Type: 'notice'
+      Title: '&0确认进入竞技场'
+      Body:
+        - Id: 'desc'
+          Renderer: 'plain_message'
+          Width: 320
+          Text:
+            - '&7你即将进入 &b天空竞技场&7。'
+            - '&7进入后将立即传送，并清空当前菜单上下文。'
+        - Id: 'mode'
+          Renderer: 'single_option'
+          Width: 320
+          Label: '&7选择模式'
+          Options:
+            - Id: 'solo'
+              Title: '&a单人'
+              Description: '&7独自进入竞技场'
+            - Id: 'team'
+              Title: '&b组队'
+              Description: '&7与队友一同进入'
+        - Id: 'reason'
+          Renderer: 'input'
+          Width: 320
+          Label: '&7附加备注'
+          Placeholder: '&8例如：快速开局'
+          Max-Length: 32
+        - Id: 'agree'
+          Renderer: 'boolean'
+          Width: 320
+          Label: '&7我已阅读进入提示'
+          Initial: false
+      Actions:
+        - Id: 'confirm_join'
+          Label: '&a确认进入'
+          Width: 160
+          Close-On-Click: true
+          Execute:
+            - 'set-meta: join_mode %trmenu_dialog_option_mode%'
+            - 'set-meta: join_reason %trmenu_dialog_input_reason%'
+            - 'tell: &a已提交进入请求，模式：%trmenu_dialog_option_mode%'
+        - Id: 'cancel_join'
+          Label: '&c取消'
+          Width: 120
+          Close-On-Click: true
+          Execute:
+            - 'close'

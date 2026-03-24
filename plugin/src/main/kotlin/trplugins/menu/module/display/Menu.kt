@@ -16,6 +16,8 @@ import trplugins.menu.api.event.MenuOpenEvent
 import trplugins.menu.api.event.MenuPageChangeEvent
 import trplugins.menu.api.receptacle.provider.PlatformProvider
 import trplugins.menu.api.receptacle.vanilla.window.WindowReceptacle
+import trplugins.menu.module.display.dialog.model.DialogMenuSpec
+import trplugins.menu.module.display.dialog.runtime.DialogMenuRenderer
 import trplugins.menu.module.display.icon.Icon
 import trplugins.menu.module.display.layout.MenuLayout
 import trplugins.menu.module.internal.data.Metadata
@@ -34,6 +36,8 @@ class Menu(
     val settings: MenuSettings,
     val layout: MenuLayout,
     val icons: Set<Icon>,
+    val renderType: MenuRenderType = MenuRenderType.WINDOW,
+    val dialogSpec: DialogMenuSpec? = null,
     conf: Configuration,
     private val langKey: String? = null,
     lang: Map<String, Map<String, Type>>? = null
@@ -81,7 +85,9 @@ class Menu(
             return page(viewer, determinedPage)
         } else if (session.menu != null) {
             menuSwitch = true
-            if (PlatformProvider.isBedrockPlayer(viewer)) {
+            if (session.renderType == MenuRenderType.DIALOG) {
+                DialogMenuRenderer.close(session, true)
+            } else if (PlatformProvider.isBedrockPlayer(viewer)) {
                 session.receptacle?.close(true)
             }
             session.shut()
@@ -92,39 +98,62 @@ class Menu(
 
         if (menuOpenEvent.isCancelled) return
         session.menu = this
+        session.renderType = renderType
         session.cacheNodes()
         block(session)
 
         if (!Metadata.byBukkit(viewer, "FORCE_OPEN") && !settings.openEvent.eval(adaptPlayer(session.viewer))) {
             session.menu = null
+            session.renderType = null
             return
-        } else {
-            if (session.receptacle != null || session.menu != this) {
-                return
-            }
+        }
+        if (renderType == MenuRenderType.DIALOG) {
             viewer.cancelNextChat(false)
-            val layout = layout[determinedPage]
-            val receptacle: WindowReceptacle
-
             session.page = determinedPage
-            session.receptacle = layout.baseReceptacle().also { receptacle = it }
-            session.playerItemSlots()
-
-            layout.initReceptacle(session)
-            loadTitle(session)
-            loadIcon(session)
             loadTasks(session)
+            DialogMenuRenderer.open(session, determinedPage)
+            return
+        }
+        openWindow(viewer, determinedPage, session, menuSwitch)
+    }
 
-            if (menuSwitch && BEDROCK_DELAY > 0 && PlatformProvider.isBedrockPlayer(viewer)) {
-                submit(async = Bukkit.isPrimaryThread(), delay = BEDROCK_DELAY) {
-                    receptacle.open(viewer)
-                    settings.properties.forEach { (id, value) ->
-                        if (id >= 0 && value != null) {
-                            receptacle.property(id, value)
-                        }
-                    }
-                }
-            } else {
+    /**
+     * 本菜单内切换页码
+     */
+    fun page(viewer: Player, page: Int, title: String? = null) {
+        val session = MenuSession.getSession(viewer)
+        if (renderType == MenuRenderType.DIALOG) {
+            val spec = dialogSpec ?: return
+            if (page < 0 || page >= spec.pageCount()) return
+            val menuPageChangeEvent = MenuPageChangeEvent(session, session.page, page, false)
+            menuPageChangeEvent.call()
+            if (menuPageChangeEvent.isCancelled) return
+            DialogMenuRenderer.page(session, page, title)
+            return
+        }
+        if (page < 0 || page > layout.getSize()) return
+        pageWindow(viewer, page, title, session)
+    }
+
+    private fun openWindow(viewer: Player, determinedPage: Int, session: MenuSession, menuSwitch: Boolean) {
+        if (session.receptacle != null || session.menu != this) {
+            return
+        }
+        viewer.cancelNextChat(false)
+        val layout = layout[determinedPage]
+        val receptacle: WindowReceptacle
+
+        session.page = determinedPage
+        session.receptacle = layout.baseReceptacle().also { receptacle = it }
+        session.playerItemSlots()
+
+        layout.initReceptacle(session)
+        loadTitle(session)
+        loadIcon(session)
+        loadTasks(session)
+
+        if (menuSwitch && BEDROCK_DELAY > 0 && PlatformProvider.isBedrockPlayer(viewer)) {
+            submit(async = Bukkit.isPrimaryThread(), delay = BEDROCK_DELAY) {
                 receptacle.open(viewer)
                 settings.properties.forEach { (id, value) ->
                     if (id >= 0 && value != null) {
@@ -132,16 +161,18 @@ class Menu(
                     }
                 }
             }
+        } else {
+            receptacle.open(viewer)
+            settings.properties.forEach { (id, value) ->
+                if (id >= 0 && value != null) {
+                    receptacle.property(id, value)
+                }
+            }
         }
     }
 
-    /**
-     * 本菜单内切换页码
-     */
-    fun page(viewer: Player, page: Int, title: String? = null) {
-        if (page < 0 || page > layout.getSize()) return
-        val session = MenuSession.getSession(viewer)
-        val previous = session.layout()!!
+    private fun pageWindow(viewer: Player, page: Int, title: String? = null, session: MenuSession = MenuSession.getSession(viewer)) {
+        val previous = session.layout() ?: return
         val layout = layout[page]
         val receptacle: WindowReceptacle
         val override = previous.isSimilar(layout) && session.receptacle != null && title == null
