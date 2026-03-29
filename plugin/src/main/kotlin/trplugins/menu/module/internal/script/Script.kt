@@ -10,6 +10,7 @@ import trplugins.menu.api.action.base.ActionEntry
 import trplugins.menu.module.display.MenuSession
 import trplugins.menu.module.internal.script.jexl.JexlAgent
 import trplugins.menu.module.internal.script.js.JavaScriptAgent
+import trplugins.menu.module.internal.script.nova.NovaScriptAgent
 import trplugins.menu.util.EvalResult
 
 /**
@@ -45,11 +46,14 @@ fun Player.evalScript(script: String?): EvalResult {
         return JavaScriptAgent.eval(MenuSession.getSession(this), js!!)
     }
     val (isJexlScript,jexl) = JexlAgent.serialize(script)
-    return if (isJexlScript) {
-        JexlAgent.eval(MenuSession.getSession(this), jexl!!)
-    } else {
-        return TrMenuAPI.instantKether(this, script)
+    if (isJexlScript) {
+        return JexlAgent.eval(MenuSession.getSession(this), jexl!!)
     }
+    val (isNovaScript, nova) = NovaScriptAgent.serialize(script)
+    if (isNovaScript) {
+        return NovaScriptAgent.eval(MenuSession.getSession(this), nova!!)
+    }
+    return TrMenuAPI.instantKether(this, script)
 }
 
 /*

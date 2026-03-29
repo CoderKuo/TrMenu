@@ -34,6 +34,7 @@ taboolib {
             name("MeowEco").with("bukkit").optional(true)
             name("CraftEngine").with("bukkit").optional(true)
             name("SX-Item").with("bukkit").optional(true)
+            name("NovaScript").with("bukkit").optional(true)
         }
     }
     relocate("trplugins.menu", group.toString())
@@ -99,6 +100,7 @@ dependencies {
     compileOnly("com.willfp:EcoItems:5.49.1") { isTransitive = false }
     compileOnly("net.momirealms:craft-engine-core:0.0.22") { isTransitive = false }
     compileOnly("net.momirealms:craft-engine-bukkit:0.0.22") { isTransitive = false }
+    compileOnly("com.github.CoderKuo:novascript:v1.0.2") { isTransitive = false }
     compileOnly(files("libs/MeowEco-26.7.0.jar"))
     compileOnly(fileTree("libs"))
 }

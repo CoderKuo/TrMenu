@@ -135,4 +135,8 @@ object HookPlugin {
         return get(HookCraftEngine::class.java)
     }
 
+    fun getNovaScript(): HookNovaScript {
+        return get(HookNovaScript::class.java)
+    }
+
 }
