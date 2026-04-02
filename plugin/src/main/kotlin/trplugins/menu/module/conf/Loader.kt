@@ -35,23 +35,25 @@ object Loader {
         "shop-example/handler/Shop-Handler-Sell.yml",
     )
 
-    private val folder: File
-        get() = ensureMenuFolder()
-
-    private fun ensureMenuFolder(): File {
+    private val folder by lazy {
+        Menu.menus.clear()
         val folder = File(getDataFolder(), "menus")
 
         if (!folder.exists()) {
-            folder.mkdirs()
-        }
-        defaults.forEach { path ->
-            val target = File(folder, path.replace('/', File.separatorChar))
-            if (!target.exists()) {
-                releaseResourceFile("menus/$path", true)
-            }
+            arrayOf(
+                "Example.yml",
+                "Demo-Buttons.yml",
+                "Profile.yml",
+                "Dialog-Example.yml",
+                "Dialog-Layout-Example.yml",
+                "shop-example/Shop-Categories.yml",
+                "shop-example/categories/Shop-Ores.yml",
+                "shop-example/handler/Shop-Handler-Purchase.yml",
+                "shop-example/handler/Shop-Handler-Sell.yml",
+            ).forEach { releaseResourceFile("menus/$it", true) }
         }
 
-        return folder
+        folder
     }
 
     var isLoading = false
