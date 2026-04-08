@@ -80,5 +80,5 @@ abstract class NMS {
      */
     abstract fun sendWindowsUpdateData(player: Player, windowId: Int = windowId(player), id: Int, value: Int)
 
-    abstract fun toNMSCopy(itemStack: ItemStack?): net.minecraft.server.v1_16_R3.ItemStack?
+    abstract fun toNMSCopy(itemStack: ItemStack?): Any?
 }

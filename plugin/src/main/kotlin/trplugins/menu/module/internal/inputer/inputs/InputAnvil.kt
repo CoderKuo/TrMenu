@@ -5,6 +5,7 @@ import org.bukkit.inventory.ItemStack
 import taboolib.common.platform.event.SubscribeEvent
 import taboolib.library.reflex.Reflex.Companion.getProperty
 import taboolib.library.xseries.XMaterial
+import taboolib.module.nms.MinecraftVersion
 import taboolib.module.nms.PacketReceiveEvent
 import taboolib.module.nms.getI18nName
 import taboolib.platform.util.buildItem
@@ -83,11 +84,15 @@ class InputAnvil(
 
         @SubscribeEvent
         fun e(e: PacketReceiveEvent) {
-            if (e.packet.name != "PacketPlayInItemName") {
+            if (e.packet.name != "PacketPlayInItemName" && e.packet.name != "ServerboundRenameItemPacket") {
                 return
             }
             val input = inputs[e.player] ?: return
-            val inputText = e.packet.source.getProperty<String>("a")!!
+            val inputText = if (MinecraftVersion.isUnobfuscated) {
+                e.packet.read<String>("name")!!
+            } else {
+                e.packet.source.getProperty<String>("a")!!
+            }
 
             input.receptacle.getElement(2)?.let { it ->
                 it.itemMeta?.let {

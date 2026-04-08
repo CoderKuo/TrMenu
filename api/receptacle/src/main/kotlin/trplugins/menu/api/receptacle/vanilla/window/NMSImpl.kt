@@ -10,9 +10,11 @@ import org.bukkit.event.inventory.InventoryType
 import org.bukkit.inventory.InventoryView
 import org.bukkit.inventory.ItemStack
 import taboolib.library.reflex.Reflex.Companion.getProperty
+import taboolib.library.reflex.Reflex.Companion.invokeMethod
 import taboolib.library.reflex.Reflex.Companion.setProperty
 import taboolib.library.reflex.Reflex.Companion.unsafeInstance
 import taboolib.module.nms.MinecraftVersion
+import taboolib.module.nms.nmsClass
 import taboolib.module.nms.sendPacket
 import taboolib.platform.util.isAir
 import trplugins.menu.api.receptacle.vanilla.window.StaticInventory.inventoryView
@@ -24,9 +26,15 @@ import trplugins.menu.api.receptacle.vanilla.window.StaticInventory.staticInvent
  */
 class NMSImpl : NMS() {
 
-    private val emptyItemStack: net.minecraft.server.v1_16_R3.ItemStack? = CraftItemStack.asNMSCopy((ItemStack(Material.AIR)))
     private val version = MinecraftVersion.majorLegacy
+    private val isUnobfuscated = MinecraftVersion.isUnobfuscated
     private val windowIds = HashMap<String, Int>()
+
+    private val emptyItemStack: Any? = if (isUnobfuscated) {
+        craftItemStackCopy(ItemStack(Material.AIR))
+    } else {
+        CraftItemStack.asNMSCopy(ItemStack(Material.AIR))
+    }
 
     private val Player.windowId get() = windowIds[this.name] ?: 119
 
@@ -44,7 +52,13 @@ class NMSImpl : NMS() {
             StaticInventory.close(player)
         } else {
             windowIds.remove(player.name)
-            player.sendPacket(PacketPlayOutCloseWindow(windowId))
+            if (isUnobfuscated) {
+                val packet = nmsClass("network.protocol.game.ClientboundContainerClosePacket")
+                    .getDeclaredConstructor(Int::class.java).newInstance(windowId)
+                player.sendPacket(packet)
+            } else {
+                player.sendPacket(PacketPlayOutCloseWindow(windowId))
+            }
         }
     }
 
@@ -58,6 +72,16 @@ class NMSImpl : NMS() {
                     }
                     inventory.setItem(index, item)
                 }
+            }
+            isUnobfuscated -> {
+                sendPacket(
+                    player,
+                    nmsClass("network.protocol.game.ClientboundContainerSetContentPacket").unsafeInstance(),
+                    "containerId" to windowId,
+                    "stateId" to 1,
+                    "items" to items.map { i -> toNMSCopy(i) }.toList(),
+                    "carriedItem" to emptyItemStack
+                )
             }
             version >= 11701 -> {
                 sendPacket(
@@ -100,6 +124,17 @@ class NMSImpl : NMS() {
         when {
             player.useStaticInventory() -> {
                 StaticInventory.open(player, type, title)
+            }
+            isUnobfuscated -> {
+                val menuType = nmsClass("world.inventory.MenuType").getProperty<Any>(type.vanillaId, isStatic = true)
+                val chatComponent = craftChatMessageComponent(title)
+                sendPacket(
+                    player,
+                    nmsClass("network.protocol.game.ClientboundOpenScreenPacket").unsafeInstance(),
+                    "containerId" to windowId,
+                    "type" to menuType,
+                    "title" to chatComponent
+                )
             }
             version >= 11900 -> {
                 sendPacket(
@@ -153,6 +188,16 @@ class NMSImpl : NMS() {
                     }
                 }
             }
+            isUnobfuscated -> {
+                sendPacket(
+                    player,
+                    nmsClass("network.protocol.game.ClientboundContainerSetSlotPacket").unsafeInstance(),
+                    "containerId" to windowId,
+                    "stateId" to -1,
+                    "slot" to slot,
+                    "itemStack" to toNMSCopy(itemStack)
+                )
+            }
             version >= 11701 -> {
                 sendPacket(
                     player,
@@ -164,7 +209,7 @@ class NMSImpl : NMS() {
                 )
             }
             else -> {
-                player.sendPacket(PacketPlayOutSetSlot(windowId, slot, toNMSCopy(itemStack)))
+                player.sendPacket(PacketPlayOutSetSlot(windowId, slot, toNMSCopy(itemStack) as? net.minecraft.server.v1_16_R3.ItemStack))
             }
         }
         if (version >= 12104) {
@@ -186,6 +231,15 @@ class NMSImpl : NMS() {
                 val property = getInventoryProperty(inventory.type, id) ?: return
                 view.setProperty(property, value)
             }
+            isUnobfuscated -> {
+                sendPacket(
+                    player,
+                    nmsClass("network.protocol.game.ClientboundContainerSetDataPacket").unsafeInstance(),
+                    "containerId" to windowId,
+                    "id" to id,
+                    "value" to value
+                )
+            }
             MinecraftVersion.isUniversal -> {
                 sendPacket(
                     player,
@@ -201,8 +255,13 @@ class NMSImpl : NMS() {
         }
     }
 
-    override fun toNMSCopy(itemStack: ItemStack?): net.minecraft.server.v1_16_R3.ItemStack? {
-        return if (itemStack.isAir()) emptyItemStack else CraftItemStack.asNMSCopy(itemStack)
+    override fun toNMSCopy(itemStack: ItemStack?): Any? {
+        if (itemStack.isAir()) return emptyItemStack
+        return if (isUnobfuscated) {
+            craftItemStackCopy(itemStack)
+        } else {
+            CraftItemStack.asNMSCopy(itemStack)
+        }
     }
 
     private fun sendPacket(player: Player, packet: Any, vararg fields: Pair<String, Any?>) {
@@ -214,4 +273,16 @@ class NMSImpl : NMS() {
         return InventoryView.Property.entries.find { (it.type == type || (it.type == InventoryType.FURNACE && type == InventoryType.BLAST_FURNACE)) && it.id == id }
     }
 
+    private fun craftItemStackCopy(itemStack: ItemStack): net.minecraft.world.item.ItemStack? {
+        return org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(itemStack)
+    }
+
+    private fun craftChatMessageComponent(text: String): Any {
+        val clazz = Class.forName("org.bukkit.craftbukkit.util.CraftChatMessage")
+        return if (text.startsWith('{') && text.endsWith('}')) {
+            clazz.invokeMethod<Any>("fromJSON", text, isStatic = true)!!
+        } else {
+            (clazz.invokeMethod<Array<Any>>("fromString", text, isStatic = true))!![0]
+        }
+    }
 }

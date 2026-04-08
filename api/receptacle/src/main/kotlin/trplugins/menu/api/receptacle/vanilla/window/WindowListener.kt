@@ -40,7 +40,8 @@ object WindowListener {
                 if (MinecraftVersion.isUniversal) {
                     slot = e.packet.read<Int>("slotNum")!!
                     button = e.packet.read<Int>("buttonNum")!!
-                    clickType = ReceptacleClickType.from(e.packet.read<Any>("clickType").toString(), button, slot) ?: return
+                    val clickTypeField = if (MinecraftVersion.isUnobfuscated) "containerInput" else "clickType"
+                    clickType = ReceptacleClickType.from(e.packet.read<Any>(clickTypeField).toString(), button, slot) ?: return
                 } else if (MinecraftVersion.majorLegacy >= 10900) {
                     slot = e.packet.read<Int>("slot")!!
                     button = e.packet.read<Int>("button")!!
