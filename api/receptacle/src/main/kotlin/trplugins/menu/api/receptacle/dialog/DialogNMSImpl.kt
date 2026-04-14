@@ -213,27 +213,10 @@ class DialogNMSImpl : DialogNMS() {
 
     private fun buildItemBody(element: DialogElementPayload): Any {
         val item = toNmsItem(element.item ?: ItemStack(org.bukkit.Material.AIR))
-        val descriptionText = buildString {
-            element.item?.itemMeta?.displayName?.takeIf { it.isNotBlank() }?.also { append(it) }
-            val lore = element.item?.itemMeta?.lore.orEmpty()
-            if (lore.isNotEmpty()) {
-                if (isNotBlank()) append('\n')
-                append(lore.joinToString("\n"))
-            }
-        }.takeIf { it.isNotBlank() }
-        val description = descriptionText?.let {
-            Optional.of(
-                newInstance(
-                    PLAIN_MESSAGE_CLASS_NAME,
-                    component(it),
-                    element.width ?: DEFAULT_TEXT_WIDTH
-                )
-            )
-        } ?: Optional.empty<Any>()
         return newInstance(
             ITEM_BODY_CLASS_NAME,
             item,
-            description,
+            Optional.empty<Any>(),
             true,
             true,
             element.width ?: DEFAULT_ITEM_SIZE,

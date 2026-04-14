@@ -99,6 +99,7 @@ open class Item(
         meta.nbt(session, itemStack)?.run {
             itemStack.itemMeta = this
         }
+        meta.enchants(session, itemStack)
 
         return itemStack
     }

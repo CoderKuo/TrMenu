@@ -359,6 +359,11 @@ enum class Property(val default: String, val regex: Regex) {
     ICON_DISPLAY_AMOUNT("amount", "(amt|amount)s?"),
 
     /**
+     * 菜单图标显示 - 附魔
+     */
+    ICON_DISPLAY_ENCHANT("enchant", "enchant(ment)?s?"),
+
+    /**
      * 菜单图标显示 - 发光
      */
     ICON_DISPLAY_SHINY("shiny", "(shiny|glow)s?"),

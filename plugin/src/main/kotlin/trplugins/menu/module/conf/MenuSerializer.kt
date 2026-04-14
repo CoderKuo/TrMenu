@@ -52,6 +52,7 @@ import trplugins.menu.module.display.dialog.model.DialogWidgetSpec
 import trplugins.menu.module.display.icon.Icon
 import trplugins.menu.module.display.icon.IconProperty
 import trplugins.menu.module.display.icon.Position
+import trplugins.menu.module.display.item.DisplayEnchant
 import trplugins.menu.module.display.item.Item
 import trplugins.menu.module.display.item.Lore
 import trplugins.menu.module.display.item.Meta
@@ -59,6 +60,7 @@ import trplugins.menu.module.display.layout.Layout
 import trplugins.menu.module.display.layout.MenuLayout
 import trplugins.menu.module.display.texture.Texture
 import trplugins.menu.module.internal.script.js.ScriptFunction
+import trplugins.menu.util.Regexs
 import trplugins.menu.util.bukkit.ItemMatcher
 import trplugins.menu.util.collections.CycleList
 import trplugins.menu.util.collections.IndivList
@@ -395,7 +397,12 @@ object MenuSerializer : ISerializer {
 
             // Meta
             val amount = if (inherit.contains(Property.ICON_DISPLAY_AMOUNT)) def!!.display.meta.amount else Property.ICON_DISPLAY_AMOUNT.ofString(display, "1")
-            val shiny = if (inherit.contains(Property.ICON_DISPLAY_SHINY)) def!!.display.meta.shiny else Property.ICON_DISPLAY_SHINY.ofString(display, "false")
+            val shiny = if (inherit.contains(Property.ICON_DISPLAY_SHINY)) def!!.display.meta.shiny else parseDisplayShiny(display)
+            val enchants = if (inherit.contains(Property.ICON_DISPLAY_ENCHANT)) {
+                def!!.display.meta.enchants
+            } else {
+                parseDisplayEnchants(display)
+            }
             val flags = if (inherit.contains(Property.ICON_DISPLAY_FLAGS)) {
                 def!!.display.meta.flags
             } else Property.ICON_DISPLAY_FLAGS.ofStringList(display).mapNotNull { flag ->
@@ -458,7 +465,7 @@ object MenuSerializer : ISerializer {
                 if (def != null && inherit.contains(Property.ICON_DISPLAY_LORE) && lore.isEmpty()) def.display.lore
                 else CycleList(lore.map { Lore(line(it)) }),
                 // 图标附加属性
-                Meta(amount, shiny, flags, nbt, tooltipStyle, itemModel, hideTooltip, unbreakable, data)
+                Meta(amount, shiny, flags, enchants, nbt, tooltipStyle, itemModel, hideTooltip, unbreakable, data)
             )
 
             // i18n
@@ -684,6 +691,117 @@ object MenuSerializer : ISerializer {
         val minor = split.getOrNull(1)?.toIntOrNull() ?: 0
         val patch = split.getOrNull(2)?.toIntOrNull() ?: 0
         return major * 10000 + minor * 100 + patch
+    }
+
+    private fun parseDisplayShiny(display: Configuration?): String {
+        if (display == null) {
+            return "false"
+        }
+        display.getKeys(false).firstOrNull { it.equals("shiny", true) || it.equals("glow", true) }?.let { key ->
+            return display[key].toString()
+        }
+        display.getKeys(false).firstOrNull { it.matches(Property.ICON_DISPLAY_ENCHANT.regex) }?.let { key ->
+            val value = display[key]
+            if (value is Boolean) {
+                return value.toString()
+            }
+            val content = value?.toString()?.trim().orEmpty()
+            if (content.matches(Regexs.BOOLEAN)) {
+                return content
+            }
+        }
+        return "false"
+    }
+
+    private fun parseDisplayEnchants(display: Configuration?): List<DisplayEnchant> {
+        if (display == null) {
+            return emptyList()
+        }
+        val key = display.getKeys(false).firstOrNull { it.matches(Property.ICON_DISPLAY_ENCHANT.regex) } ?: return emptyList()
+        return parseDisplayEnchantValue(display[key])
+    }
+
+    private fun parseDisplayEnchantValue(raw: Any?): List<DisplayEnchant> {
+        return when (raw) {
+            null -> emptyList()
+            is List<*> -> raw.flatMap { parseDisplayEnchantElement(it) }
+            is ConfigurationSection -> parseDisplayEnchantMap(raw.getValues(false))
+            is Map<*, *> -> parseDisplayEnchantMap(raw)
+            else -> listOfNotNull(parseDisplayEnchantString(raw.toString()))
+        }
+    }
+
+    private fun parseDisplayEnchantElement(raw: Any?): List<DisplayEnchant> {
+        return when (raw) {
+            null -> emptyList()
+            is List<*> -> raw.flatMap { parseDisplayEnchantElement(it) }
+            is ConfigurationSection -> parseDisplayEnchantMap(raw.getValues(false))
+            is Map<*, *> -> parseDisplayEnchantMap(raw)
+            else -> listOfNotNull(parseDisplayEnchantString(raw.toString()))
+        }
+    }
+
+    private fun parseDisplayEnchantMap(raw: Map<*, *>): List<DisplayEnchant> {
+        if (raw.isEmpty()) {
+            return emptyList()
+        }
+        if (isDisplayEnchantDescriptor(raw)) {
+            return listOfNotNull(parseDisplayEnchantDescriptor(raw))
+        }
+        return raw.entries.mapNotNull { (key, value) ->
+            val enchantKey = key?.toString()?.trim().orEmpty()
+            val enchantLevel = value?.toString()?.trim().orEmpty()
+            if (enchantKey.isEmpty() || enchantLevel.isEmpty()) {
+                null
+            } else {
+                DisplayEnchant(enchantKey, enchantLevel)
+            }
+        }
+    }
+
+    private fun isDisplayEnchantDescriptor(raw: Map<*, *>): Boolean {
+        return raw.keys.any { key ->
+            val content = key?.toString().orEmpty()
+            content.equals("id", true) ||
+                content.equals("key", true) ||
+                content.equals("type", true) ||
+                content.equals("enchant", true) ||
+                content.equals("enchantment", true)
+        }
+    }
+
+    private fun parseDisplayEnchantDescriptor(raw: Map<*, *>): DisplayEnchant? {
+        val enchantKey = readDisplayEnchantField(raw, "id", "key", "type", "enchant", "enchantment") ?: return null
+        val enchantLevel = readDisplayEnchantField(raw, "level", "lvl", "value", "amount") ?: "1"
+        return DisplayEnchant(enchantKey, enchantLevel)
+    }
+
+    private fun readDisplayEnchantField(raw: Map<*, *>, vararg names: String): String? {
+        return raw.entries.firstOrNull { entry -> names.any { entry.key?.toString().equals(it, true) } }
+            ?.value
+            ?.toString()
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
+    }
+
+    private fun parseDisplayEnchantString(raw: String): DisplayEnchant? {
+        val content = raw.trim()
+        if (content.isEmpty()) {
+            return null
+        }
+        val split = content.split(Regex("[,\\s]+"), limit = 2).map { it.trim() }.filter { it.isNotEmpty() }
+        if (split.size == 2) {
+            return DisplayEnchant(split[0], split[1])
+        }
+        val lastColon = content.lastIndexOf(':')
+        if (lastColon in 1 until content.lastIndex) {
+            val enchantKey = content.substring(0, lastColon).trim()
+            val enchantLevel = content.substring(lastColon + 1).trim()
+            if (enchantKey.isNotEmpty() && enchantLevel.toIntOrNull() != null) {
+                return DisplayEnchant(enchantKey, enchantLevel)
+            }
+        }
+        return DisplayEnchant(content, "1")
     }
 
     val line: (List<String>) -> List<String> =
