@@ -9,6 +9,7 @@
 - **Support 1.8.9 ~ 1.21.11**
 - **Fix Skull display**
 - **[International Language](https://github.com/Dreeam-qwq/TrMenu/pull/64)**
+- **Custom Crafting Table UI** — Define custom recipes directly in menu config
 - **Something more...**
 
  **Notice: We maintain this fork only based on my interests.**
@@ -45,6 +46,71 @@ You can create unlimited & highly customized inventory GUIs
 
 It covers a larger variety of functions, and is easier to configure menu  
 Also, a detailed wiki help you quickly start
+
+---
+
+### 🔨 Custom Crafting Table UI
+
+Define fully custom crafting recipes inside any menu config. Players place items into free slots, and the result updates in real-time.
+
+**Features:**
+- ✅ Shaped recipes (exact 3x3 position)
+- ✅ Shapeless recipes (any position)
+- ✅ Supports vanilla materials, Nexo, MMOItems, ItemsAdder, and all other hooked plugins
+- ✅ Custom actions on craft success (sound, message, commands...)
+- ✅ Result slot updates live as ingredients are placed
+
+**Example config:**
+
+```yaml
+Crafting:
+  Input-Slots: 10, 11, 12, 19, 20, 21, 28, 29, 30
+  Result-Slot: 14
+  Recipes:
+    - id: my_recipe
+      Shape:
+        - 'DDD'
+        - 'D D'
+        - 'DDD'
+      Ingredients:
+        D: DIAMOND
+      Result:
+        Material: DIAMOND_BLOCK
+        Amount: 1
+      Actions:
+        - 'sound: BLOCK_ANVIL_USE-1-1'
+        - 'tell: &aCraft success!'
+
+    # Nexo custom item
+    - id: nexo_recipe
+      Shape:
+        - 'NNN'
+        - 'N N'
+        - 'NNN'
+      Ingredients:
+        N: 'source:NEXO:your_item_id'
+      Result:
+        Material: 'source:NEXO:your_result_id'
+        Amount: 1
+
+    # Shapeless recipe
+    - id: shapeless_recipe
+      Shapeless: true
+      Ingredients:
+        G: GOLD_NUGGET
+      Result:
+        Material: GOLD_INGOT
+        Amount: 1
+```
+
+**Files changed:**
+- `module/crafting/CraftingSpec.kt` — Data models
+- `module/crafting/CraftingEngine.kt` — Recipe matching & taking logic
+- `module/display/Menu.kt` — Added `craftingSpec` field
+- `module/display/layout/Layout.kt` — Hooked crafting check into `onClick`
+- `module/conf/MenuSerializer.kt` — Parse `Crafting:` section
+- `util/conf/Property.kt` — Added crafting property keys
+- `resources/menus/CustomCrafting.yml` — Example menu
 
 [//]: # (---)
 

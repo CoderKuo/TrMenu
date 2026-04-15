@@ -4,6 +4,7 @@ import org.bukkit.event.inventory.InventoryType
 import taboolib.common.platform.function.adaptPlayer
 import taboolib.common.platform.function.submit
 import trplugins.menu.api.receptacle.createReceptacle
+import trplugins.menu.module.crafting.CraftingEngine
 import trplugins.menu.api.receptacle.vanilla.window.ChestInventory
 import trplugins.menu.module.display.MenuSession
 import trplugins.menu.module.internal.data.Metadata
@@ -32,8 +33,10 @@ class Layout(
 
     private val size = baseReceptacle().type.containerSize
 
+    @Suppress("unused")
     private val layout = mutableListOf<String>().also { while (it.size < rows) it.add(BLANK_LINE) }
 
+    @Suppress("unused")
     private val playerInventory = mutableListOf<String>().also { while (it.size < 4) it.add(BLANK_LINE) }
 
     val keys: Map<String, Set<Int>> by lazy {
@@ -92,6 +95,19 @@ class Layout(
                     it["slot"] = "${event.slot}"
                 }
                 session.getIconProperty(event.slot)?.handleClick(event.receptacleClickType, session)
+
+                val craftingSpec = menu.craftingSpec
+                if (craftingSpec != null) {
+                    if (menu.isFreeSlot(event.slot)) {
+                        submit(async = false, delay = 1) {
+                            val recipe = CraftingEngine.check(session, craftingSpec)
+                            CraftingEngine.updateResultSlot(session, craftingSpec, recipe)
+                        }
+                    } else if (event.slot == craftingSpec.resultSlot) {
+                        val recipe = CraftingEngine.check(session, craftingSpec)
+                        if (recipe != null) CraftingEngine.take(session, craftingSpec, recipe)
+                    }
+                }
             }
         }
     }

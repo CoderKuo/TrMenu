@@ -16,6 +16,7 @@ import trplugins.menu.api.event.MenuOpenEvent
 import trplugins.menu.api.event.MenuPageChangeEvent
 import trplugins.menu.api.receptacle.provider.PlatformProvider
 import trplugins.menu.api.receptacle.vanilla.window.WindowReceptacle
+import trplugins.menu.module.crafting.CraftingSpec
 import trplugins.menu.module.display.dialog.model.DialogMenuSpec
 import trplugins.menu.module.display.dialog.runtime.DialogMenuRenderer
 import trplugins.menu.module.display.icon.Icon
@@ -40,7 +41,8 @@ class Menu(
     val dialogSpec: DialogMenuSpec? = null,
     conf: Configuration,
     private val langKey: String? = null,
-    lang: Map<String, Map<String, Type>>? = null
+    lang: Map<String, Map<String, Type>>? = null,
+    val craftingSpec: CraftingSpec? = null
 ) {
 
     companion object {
@@ -310,6 +312,7 @@ class Menu(
         viewers.mapNotNull { Bukkit.getPlayerExact(it) }.forEach(block)
     }
 
+    @Suppress("unused")
     fun forSessions(block: Consumer<MenuSession>) =
         forSessions { block.accept(it) }
 

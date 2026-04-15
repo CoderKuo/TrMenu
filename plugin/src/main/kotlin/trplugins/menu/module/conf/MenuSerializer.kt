@@ -23,6 +23,9 @@ import trplugins.menu.api.receptacle.MenuTaskData
 import trplugins.menu.api.receptacle.MenuTaskSubData
 import trplugins.menu.api.receptacle.ReceptacleClickType
 import trplugins.menu.api.suffixes
+import trplugins.menu.module.crafting.CraftingRecipe
+import trplugins.menu.module.crafting.CraftingResult
+import trplugins.menu.module.crafting.CraftingSpec
 import trplugins.menu.module.conf.prop.SerializeError
 import trplugins.menu.module.conf.prop.SerialzeResult
 import trplugins.menu.TrMenu
@@ -169,7 +172,8 @@ object MenuSerializer : ISerializer {
             dialog?.result as? DialogMenuSpec,
             conf,
             if (languages.isNotEmpty()) langKey else null,
-            lang
+            lang,
+            serializeCrafting(conf)
         ).also {
             result.result = it
             return result
@@ -807,6 +811,35 @@ object MenuSerializer : ISerializer {
     val line: (List<String>) -> List<String> =
         { origin -> mutableListOf<String>().also { list -> origin.forEach { list.addAll(it.split("\n")) } } }
 
+    private fun serializeCrafting(conf: Configuration): CraftingSpec? {
+        val section = Property.CRAFTING.ofSection(conf) ?: return null
+        val inputSlots = Property.CRAFTING_INPUT_SLOTS.ofStringList(section)
+            .flatMap { s ->
+                if (s.contains("-")) {
+                    val parts = s.split("-")
+                    (parts[0].trim().toInt()..parts[1].trim().toInt()).toList()
+                } else listOfNotNull(s.trim().toIntOrNull())
+            }
+        val resultSlot = Property.CRAFTING_RESULT_SLOT.ofInt(section, -1)
+        if (inputSlots.isEmpty() || resultSlot < 0) return null
+
+        val recipes = section.getMapList(Property.CRAFTING_RECIPES.default).mapNotNull { map ->
+            val rc = Property.asSection(map) ?: return@mapNotNull null
+            val id = rc.getString("id") ?: "recipe_${System.nanoTime()}"
+            val shapeless = Property.CRAFTING_SHAPELESS.ofBoolean(rc, false)
+            val shape = Property.CRAFTING_SHAPE.ofStringList(rc)
+            val ingredients = Property.CRAFTING_INGREDIENTS.ofMap(rc)
+                .mapKeys { entry -> entry.key.trim().firstOrNull() ?: return@mapNotNull null }
+                .mapValues { entry -> entry.value.toString() }
+            val resultSection = Property.CRAFTING_RESULT.ofSection(rc)
+            val resultMaterial = Property.CRAFTING_RESULT_MATERIAL.ofString(resultSection, "STONE")
+            val resultAmount = Property.CRAFTING_RESULT_AMOUNT.ofInt(resultSection, 1)
+            val actions = Reactions.ofReaction(actionHandle, rc["actions"])
+            CraftingRecipe(id, shapeless, shape, ingredients, CraftingResult(resultMaterial, resultAmount), actions)
+        }
+
+        return CraftingSpec(inputSlots, resultSlot, recipes)
+    }
     // Method body taken from Taboolib, licensed under the MIT License
     //
     // Copyright (c) 2018 Bkm016

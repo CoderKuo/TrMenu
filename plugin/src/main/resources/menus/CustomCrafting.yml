@@ -1,0 +1,68 @@
+Title: '&8⚒ Custom Crafting'
+
+Layout:
+  - '#########'
+  - '#123#R###'
+  - '#456#####'
+  - '#789#####'
+  - '#########'
+
+Options:
+  Free-Slots: 10, 11, 12, 19, 20, 21, 28, 29, 30
+  Min-Click-Delay: 50
+
+Icons:
+  '#':
+    display:
+      material: BLACK_STAINED_GLASS_PANE
+      name: ' '
+
+  R:
+    display:
+      material: AIR
+      name: '&7Đặt nguyên liệu vào ô bên trái'
+      slot: 14
+
+Crafting:
+  Input-Slots: 10, 11, 12, 19, 20, 21, 28, 29, 30
+  Result-Slot: 14
+  Recipes:
+    - id: diamond_from_coal
+      Shape:
+        - 'CCC'
+        - 'CCC'
+        - 'CCC'
+      Ingredients:
+        C: COAL
+      Result:
+        Material: DIAMOND
+        Amount: 1
+      Actions:
+        - 'sound: BLOCK_ANVIL_USE-1-1'
+        - 'tell: &aBạn đã craft thành công 1 Diamond!'
+
+    - id: gold_ingot_shapeless
+      Shapeless: true
+      Ingredients:
+        G: GOLD_NUGGET
+        G: GOLD_NUGGET
+        G: GOLD_NUGGET
+      Result:
+        Material: GOLD_INGOT
+        Amount: 1
+      Actions:
+        - 'sound: BLOCK_ANVIL_USE-1-1'
+
+    - id: nexo_custom_item
+      Shape:
+        - 'DDD'
+        - 'D D'
+        - 'DDD'
+      Ingredients:
+        D: 'source:NEXO:your_nexo_item_id'
+      Result:
+        Material: 'source:NEXO:your_result_item_id'
+        Amount: 1
+      Actions:
+        - 'sound: ENTITY_PLAYER_LEVELUP-1-1'
+        - 'tell: &6Craft đặc biệt thành công!'

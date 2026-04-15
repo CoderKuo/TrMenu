@@ -421,7 +421,57 @@ enum class Property(val default: String, val regex: Regex) {
     /**
      * 菜单内虚拟OP命令
      */
-    COMMAND_FAKE_OP("Command-Fake-Op", "command-?fake-?op");
+    COMMAND_FAKE_OP("Command-Fake-Op", "command-?fake-?op"),
+
+    /**
+     * Crafting - root section
+     */
+    CRAFTING("Crafting", "craft(ing)?"),
+
+    /**
+     * Crafting - input slots
+     */
+    CRAFTING_INPUT_SLOTS("Input-Slots", "input-?slots?"),
+
+    /**
+     * Crafting - result slot
+     */
+    CRAFTING_RESULT_SLOT("Result-Slot", "result-?slots?"),
+
+    /**
+     * Crafting - recipes list
+     */
+    CRAFTING_RECIPES("Recipes", "recipes?"),
+
+    /**
+     * Crafting recipe - shapeless flag
+     */
+    CRAFTING_SHAPELESS("Shapeless", "shapeless"),
+
+    /**
+     * Crafting recipe - shape
+     */
+    CRAFTING_SHAPE("Shape", "shapes?"),
+
+    /**
+     * Crafting recipe - ingredients
+     */
+    CRAFTING_INGREDIENTS("Ingredients", "ingredients?"),
+
+    /**
+     * Crafting recipe - result
+     */
+    CRAFTING_RESULT("Result", "results?"),
+
+    /**
+     * Crafting recipe - result material
+     */
+    CRAFTING_RESULT_MATERIAL("Material", "(mat(erial)?|texture)s?"),
+
+    /**
+     * Crafting recipe - result amount
+     */
+    CRAFTING_RESULT_AMOUNT("Amount", "(amt|amount)s?");
 
     constructor(default: String, regex: String) : this(default, Regex("(?i)$regex"))
 
