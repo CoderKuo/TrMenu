@@ -126,7 +126,17 @@ object Heads {
             meta.owningPlayer?.name?.let { return it }
         }
 
-        meta.getProperty<GameProfile>("profile")?.properties?.values()?.forEach {
+        val profileValue = meta.getProperty<Any>("profile") ?: return null
+
+        val gameProfile: GameProfile? = if (profileValue is GameProfile) {
+            profileValue
+        } else {
+            // Minecraft 1.21+ 将 profile 字段改为 ResolvableProfile
+            val optional = runCatching { profileValue.invokeMethod<Any>("gameProfile") }.getOrNull()
+            runCatching { optional?.invokeMethod<GameProfile>("orElse", null) }.getOrNull()
+        }
+
+        gameProfile?.properties?.values()?.forEach {
             if (it.getProperty<String>(NAME) == "textures") return it.getProperty<String>(VALUE)
         }
         return null
