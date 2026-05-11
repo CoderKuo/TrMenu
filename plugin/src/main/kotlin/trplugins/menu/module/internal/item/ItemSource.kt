@@ -40,7 +40,16 @@ object ItemSource {
             "MagicCosmeticsI", "MAGICI" -> HookPlugin.getMagicCosmetics().getCosmeticItem(id)
             "MMOITEMS", "MI" -> HookPlugin.getMMOItems().getItem(id)
             "MAGICGEM", "MG" -> HookPlugin.getMagicGem().getItem(id)
-            "NEIGEITEMS", "NI" -> HookPlugin.getNeigeItem().getItem(id)
+            "NEIGEITEMS", "NI" -> {
+    val dataIdx = id.indexOf(":data:")
+    if (dataIdx != -1) {
+        val realId = id.substring(0, dataIdx)
+        val data = id.substring(dataIdx + 6)
+        HookPlugin.getNeigeItem().getItem(realId, data)
+    } else {
+        HookPlugin.getNeigeItem().getItem(id)
+    }
+}
             "ECOITEMS", "EI" -> HookPlugin.getEcoItem().getItem(id)
             "HMCCosmetics", "HMC" -> HookPlugin.getHMCCosmetics().getItem(id)
             "MYTHICMOBS", "MM" -> HookPlugin.getMythicMobs().getItem(id)

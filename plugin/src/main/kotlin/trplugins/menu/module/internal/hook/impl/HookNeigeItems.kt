@@ -21,6 +21,13 @@ class HookNeigeItems : HookAbstract() {
         return empty
     }
 
+    fun getItem(id: String, data: String?): ItemStack {
+        if (checkHooked()) {
+            return ItemManager.getItemStack(id, data) ?: empty
+        }
+        return empty
+    }
+
     fun getId(itemStack: ItemStack): String {
         if (checkHooked()) {
             return ItemManager.isNiItem(itemStack)?.id ?: "UNKNOWN"
