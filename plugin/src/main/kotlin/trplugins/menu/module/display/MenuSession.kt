@@ -153,6 +153,29 @@ class MenuSession(
         return if (preColor) papi else papi.colorify()
     }
 
+    /**
+     * 处理标题字符串，仅替换函数变量与占位符，不进行颜色处理
+     * 颜色处理交由下游的 TabooLib component() 管道完成，避免
+     * BungeeCord §x 格式与 SimpleComponent parseToHexColor 的兼容问题
+     */
+    fun parseTitle(string: String): String {
+        val funced = FunctionParser.parse(placeholderPlayer, string) { type, value ->
+            when (type) {
+                "node", "nodes", "n" -> parseNode(value) { key ->
+                    getNodeValue(key)
+                }
+                "lang" -> parseNode(value) { key ->
+                    menu?.getLocaleValue(locale, key)
+                }
+                else -> null
+            }
+        }
+        return funced
+            .replaceWithOrder(*arguments)
+            .replaceWithOrder(*implicitArguments)
+            .replacePlaceholder(placeholderPlayer)
+    }
+
     fun parse(string: List<String>): List<String> {
         return string.map { parse(it) }
     }

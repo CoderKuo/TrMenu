@@ -6,6 +6,7 @@ import taboolib.common.platform.function.adaptPlayer
 import taboolib.common.platform.function.console
 import taboolib.common.platform.function.pluginId
 import taboolib.common.platform.function.submit
+import taboolib.module.chat.colored
 import taboolib.module.chat.component
 import taboolib.module.configuration.Configuration
 import taboolib.module.lang.Type
@@ -24,7 +25,6 @@ import trplugins.menu.module.internal.data.Metadata
 import trplugins.menu.module.internal.script.evalAction
 import trplugins.menu.module.internal.script.evalScript
 import trplugins.menu.util.colorify
-import trplugins.menu.util.parseJson
 import java.util.function.Consumer
 
 /**
@@ -221,12 +221,12 @@ class Menu(
     private fun loadTitle(session: MenuSession) {
         val title = settings.title(session)
         session.receptacle?.title(title.next(session.id)?.let {
-            formatTitle(session.parse(it))
+            formatTitle(session.parseTitle(it))
         } ?: pluginId, update = false)
 
         val setTitle = {
             session.receptacle?.title(title.next(session.id)?.let {
-                formatTitle(session.parse(it))
+                formatTitle(session.parseTitle(it))
             } ?: pluginId)
         }
 
@@ -238,12 +238,7 @@ class Menu(
     }
 
     private fun formatTitle(title: String): String {
-        val colored = if (SetTitle.useComponent && runCatching { title.parseJson() }.isSuccess) {
-            title
-        } else {
-            title.colorify()
-        }
-        return if (SetTitle.useComponent) colored.component().build().toRawMessage() else colored
+        return if (SetTitle.useComponent) title.colored().component().build().toRawMessage() else title.colorify()
     }
 
     private fun loadIcon(session: MenuSession) {
