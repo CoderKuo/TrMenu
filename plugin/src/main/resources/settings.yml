@@ -94,6 +94,9 @@ Menu:
 Action:
   Using-Component: true
   Title-Using-Component: true
+  # Whether to use MiniMessage format for menu titles (Requires Paper 1.16+, mutually exclusive with Title-Using-Component)
+  # Supports tags like: <red>text</red>, <bold>, <gradient:red:blue>gradient</gradient>, <rainbow>rainbow</rainbow>, etc.
+  Title-MiniMessage: false
   Inputer:
     Cancel-Words:
       - 'cancel|quit|end'

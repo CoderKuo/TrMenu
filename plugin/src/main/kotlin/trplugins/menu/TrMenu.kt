@@ -95,6 +95,7 @@ object TrMenu : Plugin() {
         Bindings.load()
         Tell.useComponent = SETTINGS.getBoolean("Action.Using-Component", true)
         SetTitle.useComponent = if (MinecraftVersion.isHigherOrEqual(MinecraftVersion.V1_14)) SETTINGS.getBoolean("Action.Title-Using-Component", false) else false
+        SetTitle.useMiniMessage = if (MinecraftVersion.isHigherOrEqual(MinecraftVersion.V1_16)) SETTINGS.getBoolean("Action.Title-MiniMessage", false) else false
         PlatformProvider.compute()
         NMS.javaStaticInventory = SETTINGS.getBoolean("Options.Static-Inventory.Java", false)
         NMS.bedrockStaticInventory = SETTINGS.getBoolean("Options.Static-Inventory.Bedrock", false)

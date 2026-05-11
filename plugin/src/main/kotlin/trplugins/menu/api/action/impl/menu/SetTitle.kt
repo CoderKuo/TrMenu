@@ -6,6 +6,7 @@ import trplugins.menu.api.action.ActionHandle
 import trplugins.menu.api.action.base.ActionBase
 import trplugins.menu.api.action.base.ActionContents
 import trplugins.menu.module.display.session
+import trplugins.menu.util.MiniMessageUtil
 import trplugins.menu.util.colorify
 import trplugins.menu.util.parseJson
 
@@ -19,6 +20,7 @@ import trplugins.menu.util.parseJson
 class SetTitle(handle: ActionHandle) : ActionBase(handle) {
     companion object {
         var useComponent = true
+        var useMiniMessage = false
     }
 
     override val regex = "set-?title".toRegex()
@@ -27,12 +29,12 @@ class SetTitle(handle: ActionHandle) : ActionBase(handle) {
         val session = player.session()
         val receptacle = session.receptacle ?: return
         var title = contents.stringContent().parseContent(placeholderPlayer)
-        title = if (useComponent && runCatching { title.parseJson() }.isSuccess) {
-            title
-        } else {
-            title.colorify()
+        title = when {
+            useComponent && runCatching { title.parseJson() }.isSuccess -> title
+            useMiniMessage -> MiniMessageUtil.toJson(title)
+            else -> title.colorify()
         }
-        if (useComponent) {
+        if (useComponent || useMiniMessage) {
             title = title.component().build().toRawMessage()
         }
         receptacle.title(title)

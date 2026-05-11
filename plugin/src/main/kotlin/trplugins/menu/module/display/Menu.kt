@@ -23,6 +23,7 @@ import trplugins.menu.module.display.layout.MenuLayout
 import trplugins.menu.module.internal.data.Metadata
 import trplugins.menu.module.internal.script.evalAction
 import trplugins.menu.module.internal.script.evalScript
+import trplugins.menu.util.MiniMessageUtil
 import trplugins.menu.util.colorify
 import trplugins.menu.util.parseJson
 import java.util.function.Consumer
@@ -238,12 +239,12 @@ class Menu(
     }
 
     private fun formatTitle(title: String): String {
-        val colored = if (SetTitle.useComponent && runCatching { title.parseJson() }.isSuccess) {
-            title
-        } else {
-            title.colorify()
+        val colored = when {
+            SetTitle.useComponent && runCatching { title.parseJson() }.isSuccess -> title
+            SetTitle.useMiniMessage -> MiniMessageUtil.toJson(title)
+            else -> title.colorify()
         }
-        return if (SetTitle.useComponent) colored.component().build().toRawMessage() else colored
+        return if (SetTitle.useComponent || SetTitle.useMiniMessage) colored.component().build().toRawMessage() else colored
     }
 
     private fun loadIcon(session: MenuSession) {
