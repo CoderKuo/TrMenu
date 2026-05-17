@@ -98,8 +98,8 @@ dependencies {
     compileOnly("pers.neige.neigeitems:NeigeItems:1.17.24") { isTransitive = false }
     compileOnly("com.willfp:eco:6.71.3") { isTransitive = false }
     compileOnly("com.willfp:EcoItems:5.49.1") { isTransitive = false }
-    compileOnly("net.momirealms:craft-engine-core:0.0.22") { isTransitive = false }
-    compileOnly("net.momirealms:craft-engine-bukkit:0.0.22") { isTransitive = false }
+    compileOnly("net.momirealms:craft-engine-core:26.5") { isTransitive = false }
+    compileOnly("net.momirealms:craft-engine-bukkit:26.5") { isTransitive = false }
     compileOnly("com.github.CoderKuo:novascript:v1.0.2") { isTransitive = false }
     compileOnly(files("libs/MeowEco-26.7.0.jar"))
     compileOnly(fileTree("libs"))
