@@ -5,7 +5,7 @@ plugins {
     java
     idea
     kotlin("jvm") version "2.1.0"
-    id("io.izzel.taboolib") version "2.0.30"
+    id("io.izzel.taboolib") version "2.0.36"
 }
 
 // 这段。一言难尽，但我不想动 (依托)
@@ -67,7 +67,7 @@ subprojects {
                 XSeries,
                 PtcObject
             )
-            repoTabooLib = "https://repo.aeoliancloud.com/repository/releases"
+            repoTabooLib = "https://repo.tabooproject.org/repository/releases"
 //            repoTabooLib = project.repositories.mavenLocal().url.toString()
             disableOnSkippedVersion = false
         }
@@ -84,7 +84,6 @@ subprojects {
         maven("https://hub.spigotmc.org/nexus/content/groups/public/")
 //        maven("http://sacredcraft.cn:8081/repository/releases") { isAllowInsecureProtocol = true }
         maven("https://repo.codemc.io/repository/nms/")
-        maven("https://hub.spigotmc.org/nexus/content/groups/public/")
         maven("https://repo.opencollab.dev/main/")
     }
 
