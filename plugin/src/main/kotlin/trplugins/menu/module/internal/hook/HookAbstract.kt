@@ -51,4 +51,11 @@ abstract class HookAbstract {
         JexlAgent.putBinding(namespace, this)
     }
 
+    /**
+     * 由 [HookPlugin] 在服务器进入 [taboolib.common.LifeCycle.ACTIVE] 时统一回调。
+     * 各 Hook 可在此时做一次性、依赖“所有插件均已 onEnable”后才稳定的初始化工作。
+     */
+    open fun onServerActive() {
+    }
+
 }

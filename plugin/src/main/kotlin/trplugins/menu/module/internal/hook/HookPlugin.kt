@@ -1,6 +1,7 @@
 package trplugins.menu.module.internal.hook
 
 import taboolib.common.LifeCycle
+import taboolib.common.platform.Awake
 import taboolib.common.platform.SkipTo
 import taboolib.common.platform.function.console
 import taboolib.library.reflex.Reflex.Companion.invokeConstructor
@@ -20,6 +21,15 @@ object HookPlugin {
         registry.filter { it.isHooked }.forEach {
             console().sendLang("Plugin-Dependency-Hooked", it.name)
         }
+    }
+
+    /**
+     * 服务器全部插件加载完成后，统一通知各 Hook 做一次依赖于
+     * 第三方插件 onEnable 完成的初始化工作（例如缓存解析结果）。
+     */
+    @Awake(LifeCycle.ACTIVE)
+    fun onServerActive() {
+        registry.forEach { runCatching { it.onServerActive() } }
     }
 
     private val registry by lazy {
