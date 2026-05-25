@@ -26,11 +26,8 @@ class SetTitle(handle: ActionHandle) : ActionBase(handle) {
     override fun onExecute(contents: ActionContents, player: ProxyPlayer, placeholderPlayer: ProxyPlayer) {
         val session = player.session()
         val receptacle = session.receptacle ?: return
-        var title = contents.stringContent().parseContent(placeholderPlayer)
-        title = if (useComponent) {
-            title.colored().component().build().toRawMessage()
-        } else {
-            title.colorify()
+        val title = contents.stringContent().parseContent(placeholderPlayer).colorify().let {
+            if (useComponent) it.colored().component().build().toRawMessage() else it
         }
         receptacle.title(title)
     }

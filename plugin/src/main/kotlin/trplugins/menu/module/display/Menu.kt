@@ -238,7 +238,8 @@ class Menu(
     }
 
     private fun formatTitle(title: String): String {
-        return if (SetTitle.useComponent) title.colored().component().build().toRawMessage() else title.colorify()
+        val coloredTitle = title.colorify()
+        return if (SetTitle.useComponent) coloredTitle.colored().component().build().toRawMessage() else coloredTitle
     }
 
     private fun loadIcon(session: MenuSession) {
