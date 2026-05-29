@@ -5,7 +5,7 @@ dependencies {
 
 
     // Folia
-    compileOnly("io.paper:folia-api:1.20.4")
+    compileOnly("io.paper:folia-api:1.21.4")
 
 }
 
