@@ -255,6 +255,15 @@ class NMSImpl : NMS() {
         }
     }
 
+    override fun clearActiveItem(player: Player) {
+        runCatching { player.javaClass.getMethod("clearActiveItem").invoke(player); return }
+        val handle = runCatching { player.invokeMethod<Any>("getHandle") }.getOrNull() ?: return
+        // clearActiveItem: Spigot 1.16 及以下映射名，stopUsingItem: Mojang 映射名
+        arrayOf("clearActiveItem", "stopUsingItem").firstOrNull { name ->
+            runCatching { handle.invokeMethod<Any>(name); true }.getOrDefault(false)
+        }
+    }
+
     override fun toNMSCopy(itemStack: ItemStack?): Any? {
         if (itemStack.isAir()) return emptyItemStack
         return if (isUnobfuscated) {
