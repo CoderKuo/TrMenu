@@ -22,7 +22,9 @@ class DelData(handle: ActionHandle) : ActionBase(handle) {
 
         contents.stringContent().parseContentSplited(placeholderPlayer, ";").forEach { it ->
             val regex = Regex(it)
-            data.keys.filter { it.matches(regex) }.forEach { data.remove(it) }
+            data.keys.filter { it.matches(regex) }.forEach {
+                Metadata.setData(player.cast(), Metadata.DataType.DATA, it, null)
+            }
         }
     }
 }

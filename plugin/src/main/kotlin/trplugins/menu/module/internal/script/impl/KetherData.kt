@@ -25,21 +25,15 @@ class KetherData(val type: EditType, private val source: ParsedAction<*>, privat
         return context.newFrame(source).run<String>().thenApply { key ->
             when (type) {
                 DEL -> {
-                    Metadata.getData(viewer).remove(key).also {
-                        if (!Metadata.isUseLegacy) {
-                            Metadata.saveData(viewer, key)
-                        }
+                    Metadata.getData(viewer)[key].also {
+                        Metadata.setData(viewer, Metadata.DataType.DATA, key, null)
                     }
                 }
 
                 SET -> {
                     apply?.let { it1 ->
                         context.newFrame(it1).run<String>().thenApply { apply ->
-                            Metadata.getData(viewer)[key] = apply.also {
-                                if (!Metadata.isUseLegacy) {
-                                    Metadata.saveData(viewer, key)
-                                }
-                            }
+                            Metadata.setData(viewer, Metadata.DataType.DATA, key, apply)
                         }
                     }
                 }

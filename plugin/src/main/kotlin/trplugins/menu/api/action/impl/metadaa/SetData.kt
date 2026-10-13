@@ -24,10 +24,7 @@ class SetData(handle: ActionHandle) : ActionBase(handle) {
                 val key = split[0]
                 val value = split[1]
 
-                Metadata.getData(player)[key] = value
-                if (!Metadata.isUseLegacy) {
-                    Metadata.saveData(player.cast(), key)
-                }
+                Metadata.setData(player.cast(), Metadata.DataType.DATA, key, value)
             }
         }
     }
