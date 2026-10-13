@@ -77,12 +77,14 @@ open class WindowReceptacle(var type: WindowLayout, override var title: String =
     override fun open(player: Player) {
         viewer = player
         player.setViewingReceptacle(this)
+        nmsProxy<NMS>().clearActiveItem(player)
         initializationPackets()
         onOpen(player, this)
     }
 
     override fun close(sendPacket: Boolean) {
         if (viewer != null) {
+            nmsProxy<NMS>().clearActiveItem(viewer!!)
             if (sendPacket) {
                 nmsProxy<NMS>().sendWindowsClose(viewer!!)
             }

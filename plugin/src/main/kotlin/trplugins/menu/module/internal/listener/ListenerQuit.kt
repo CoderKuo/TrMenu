@@ -19,7 +19,12 @@ object ListenerQuit {
         val player = e.player
         val session = MenuSession.getSession(player)
         session.shut()
-        submit(async = true) {
+        if (Metadata.isUseLegacy) {
+            submit(async = true) {
+                Metadata.pushData(player)
+            }
+        } else {
+            // Capture the snapshot before another session can modify this player's data.
             Metadata.pushData(player)
         }
         Menu.menus.forEach {

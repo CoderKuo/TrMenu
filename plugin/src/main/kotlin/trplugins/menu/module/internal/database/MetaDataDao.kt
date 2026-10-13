@@ -37,6 +37,16 @@ class MetaDataDao {
         }.filter { it?.data?.isNotEmpty() == true }.mapNotNull { it }
     }
 
+    fun delete(uuid: UUID, key: String) {
+        val containerx = container[table]
+        containerx.table.delete(containerx.dataSource) {
+            where {
+                "user" eq uuid.toString()
+                "key" eq key
+            }
+        }
+    }
+
     fun get(uuid: UUID, key: String): DataEntity? {
         return container[table].getOne<DataEntity?> {
             "user" eq uuid.toString()

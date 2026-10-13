@@ -47,6 +47,8 @@ object Metadata {
     internal val data = mutableMapOf<String, DataMap>()
     internal val global = ConcurrentHashMap<String, Any?>()
 
+    private val storageQueue = DataStorageQueue { it.printStackTrace() }
+
     @Config("data/globalData.yml")
     lateinit var globalData: Configuration
 
@@ -91,9 +93,20 @@ object Metadata {
     }
 
     fun saveData(player: Player, key: String) {
-        submitAsync {
-            MetaDataDao.door.update(DataEntity.constructor(player, key, getData(player)[key]?.toString() ?: ""))
+        val uuid = player.uniqueId
+        val value = getData(player)[key]?.toString()
+        storageQueue.write {
+            if (value == null) {
+                MetaDataDao.door.delete(uuid, key)
+            } else {
+                MetaDataDao.door.update(DataEntity(uuid, key, value))
+            }
         }
+    }
+
+    @Awake(LifeCycle.DISABLE)
+    fun closeStorage() {
+        storageQueue.close()
     }
 
     fun pushData(player: Player, dataMap: DataMap = getData(player)) {
@@ -108,8 +121,16 @@ object Metadata {
             }
             database?.push(player)
         } else {
-            dataMap.data.forEach { (key, value) ->
-                MetaDataDao.door.update(DataEntity.constructor(player, key, value?.toString() ?: ""))
+            val uuid = player.uniqueId
+            val snapshot = dataMap.data.mapValues { it.value?.toString() }
+            storageQueue.write {
+                snapshot.forEach { (key, value) ->
+                    if (value == null) {
+                        MetaDataDao.door.delete(uuid, key)
+                    } else {
+                        MetaDataDao.door.update(DataEntity(uuid, key, value))
+                    }
+                }
             }
         }
     }
@@ -126,7 +147,8 @@ object Metadata {
                 section.getKeys(true).forEach { key -> map[key] = section[key] }
             }
         } else {
-            MetaDataDao.door.get(player.uniqueId).forEach {
+            val uuid = player.uniqueId
+            storageQueue.read { MetaDataDao.door.get(uuid) }.forEach {
                 map[it.key] = it.data
             }
         }
@@ -227,7 +249,11 @@ object Metadata {
     fun setData(player: Player, dataType: DataType, dataName: String, value: Any?) {
         when (dataType) {
             DataType.DATA -> {
-                getData(player)[dataName] = value
+                if (value == null) {
+                    getData(player).remove(dataName)
+                } else {
+                    getData(player)[dataName] = value
+                }
                 if (!isUseLegacy) {
                     saveData(player, dataName)
                 }

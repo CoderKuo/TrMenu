@@ -81,4 +81,10 @@ abstract class NMS {
     abstract fun sendWindowsUpdateData(player: Player, windowId: Int = windowId(player), id: Int, value: Int)
 
     abstract fun toNMSCopy(itemStack: ItemStack?): Any?
+
+    /**
+     * 发包菜单不会走 Bukkit openInventory，客户端右键没松开时会卡在使用状态。
+     * 所以打断举盾/拉弓等“正在使用物品”。
+     */
+    abstract fun clearActiveItem(player: Player)
 }
